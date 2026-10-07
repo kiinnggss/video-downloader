@@ -9,7 +9,7 @@ def parse_raw_info(info: Dict[str, Any]) -> InspectResponse:
     duration = int(info.get("duration") or 0)
     thumbnail = info.get("thumbnail") or ""
     
-    raw_formats = info.get("formats", [])
+    raw_formats = info.get("formats") or []
     formats: List[FormatOption] = []
     seen_resolutions = set()
 
@@ -73,6 +73,7 @@ def extract_video_info(url: str) -> InspectResponse:
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
+        "noplaylist": True,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)

@@ -61,6 +61,17 @@ def test_parse_raw_info_empty_formats_fallback():
     assert result.formats[0].format_id == "best"
     assert result.formats[0].resolution == "Best Available"
 
+def test_parse_raw_info_none_formats():
+    mock_payload = {
+        "url": "https://example.com/video",
+        "title": "Stream Video",
+        "formats": None,
+    }
+    result = parse_raw_info(mock_payload)
+    assert result.title == "Stream Video"
+    assert len(result.formats) == 1
+    assert result.formats[0].format_id == "best"
+
 def test_extract_video_info():
     mock_payload = {
         "webpage_url": "https://example.com/watch?v=123",
@@ -75,4 +86,10 @@ def test_extract_video_info():
         mock_ydl.extract_info.return_value = mock_payload
         res = extract_video_info("https://example.com/watch?v=123")
         assert res.title == "Ocean Life"
+        mock_ydl_cls.assert_called_once_with({
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "noplaylist": True,
+        })
         mock_ydl.extract_info.assert_called_once_with("https://example.com/watch?v=123", download=False)
