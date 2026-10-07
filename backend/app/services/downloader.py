@@ -1,6 +1,9 @@
+import os
 import uuid
+import time
 import threading
 import asyncio
+from pathlib import Path
 from typing import Dict, Any, AsyncGenerator, Optional
 import yt_dlp
 from app.models import DownloadRequest, DownloadTask, MediaFile
@@ -41,8 +44,12 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
     target_dir.mkdir(parents=True, exist_ok=True)
     outtmpl = str(target_dir / f"%(title)s-{task_id[:8]}.%(ext)s")
 
+    last_db_save_time = 0.0
+    last_saved_status = None
+
     def progress_hook(d: Dict[str, Any]):
-        status = d.get("status")
+        nonlocal last_db_save_time, last_saved_status
+        status = d.get("status") or "downloading"
         downloaded = int(d.get("downloaded_bytes") or 0)
         total = int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0)
         speed_raw = d.get("speed", 0) or 0
@@ -55,7 +62,7 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             task_id=task_id,
             url=req.url,
             title=info_dict.get("title", "Downloading..."),
-            status=status or "downloading",
+            status=status,
             progress=progress,
             speed=speed_str,
             downloaded_bytes=downloaded,
@@ -63,7 +70,13 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             eta_seconds=int(eta) if eta is not None else None,
             in_vault=req.in_vault
         )
-        save_task(task, db_path=db_path)
+
+        now = time.time()
+        if status != last_saved_status or (now - last_db_save_time >= 1.0):
+            save_task(task, db_path=db_path)
+            last_db_save_time = now
+            last_saved_status = status
+
         broadcast_telemetry(task.model_dump())
 
     ydl_opts = {
@@ -89,13 +102,21 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             if req.is_audio:
                 filename = str(filename).rsplit(".", 1)[0] + ".mp3"
             
+            filepath_str = str(filename)
+            filesize = int(info.get("filesize") or 0)
+            if not filesize and os.path.exists(filepath_str):
+                try:
+                    filesize = os.path.getsize(filepath_str)
+                except OSError:
+                    filesize = 0
+
             media = MediaFile(
                 file_id=str(uuid.uuid4()),
                 title=info.get("title", "Downloaded Video"),
-                filename=str(filename).split("/")[-1],
-                filepath=str(filename),
+                filename=Path(filename).name,
+                filepath=filepath_str,
                 category="music" if req.is_audio else "video",
-                filesize=int(info.get("filesize") or 0),
+                filesize=filesize,
                 duration=int(info.get("duration") or 0),
                 thumbnail=info.get("thumbnail"),
                 in_vault=req.in_vault

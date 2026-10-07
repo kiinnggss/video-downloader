@@ -1,6 +1,7 @@
 import os
 import tempfile
 import asyncio
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
 
@@ -268,3 +269,121 @@ def test_run_download_thread_error(test_db):
     assert failed_task.status == "error"
     assert failed_task.title == "Download Failed"
     assert failed_task.progress == 0.0
+
+def test_progress_hook_throttles_db_writes(test_db):
+    req = DownloadRequest(
+        url="https://example.com/stream",
+        format_id="22",
+        is_audio=False,
+        in_vault=False
+    )
+    task_id = "task-throttle-test"
+    simulated_time = 1000.0
+
+    class MockThrottledYoutubeDL:
+        def __init__(self, opts):
+            self.opts = opts
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def extract_info(self, url, download=True):
+            nonlocal simulated_time
+            hook = self.opts["progress_hooks"][0]
+            # Event 1: first downloading event (status transition from None to downloading) -> saves to DB
+            hook({"status": "downloading", "downloaded_bytes": 1000, "total_bytes": 10000})
+
+            # Event 2: rapid event 0.1s later (status still downloading) -> throttles DB write
+            simulated_time += 0.1
+            hook({"status": "downloading", "downloaded_bytes": 2000, "total_bytes": 10000})
+
+            # Event 3: rapid event 0.2s later -> throttles DB write
+            simulated_time += 0.2
+            hook({"status": "downloading", "downloaded_bytes": 3000, "total_bytes": 10000})
+
+            # Event 4: event after 1.1s -> saves to DB
+            simulated_time += 1.1
+            hook({"status": "downloading", "downloaded_bytes": 5000, "total_bytes": 10000})
+
+            # Event 5: status transition to finished within hook -> saves to DB immediately
+            simulated_time += 0.1
+            hook({"status": "finished", "downloaded_bytes": 10000, "total_bytes": 10000})
+
+            return {"title": "Stream Clip", "filesize": 10000}
+
+        def prepare_filename(self, info):
+            return "/tmp/storage/public/videos/clip.mp4"
+
+    with patch("time.time", side_effect=lambda: simulated_time), \
+         patch("yt_dlp.YoutubeDL", side_effect=MockThrottledYoutubeDL), \
+         patch("app.services.downloader.save_task") as mock_save, \
+         patch("app.services.downloader.broadcast_telemetry") as mock_broadcast:
+
+        run_download_thread(task_id, req, db_path=test_db)
+
+        # Broadcast is called on all 5 hook events + 1 completion event = 6 times
+        assert mock_broadcast.call_count == 6
+        # save_task should be called for:
+        # 1. Event 1 (transition to downloading)
+        # 2. Event 4 (>1.0s elapsed)
+        # 3. Event 5 (transition to finished in hook)
+        # 4. Final completion save
+        # It must not be called for Events 2 and 3.
+        assert mock_save.call_count == 4
+
+def test_run_download_thread_filesize_fallback_and_path_name(test_db):
+    req = DownloadRequest(
+        url="https://example.com/fallback-size",
+        format_id="best",
+        is_audio=False,
+        in_vault=False
+    )
+    task_id = "task-fallback-size"
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tf:
+        tf.write(b"0" * 45678)
+        disk_file_path = tf.name
+
+    try:
+        class MockSizeFallbackYoutubeDL:
+            def __init__(self, opts):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                pass
+
+            def extract_info(self, url, download=True):
+                return {
+                    "title": "Fallback Video",
+                    "filesize": 0,
+                    "duration": 12,
+                    "thumbnail": None
+                }
+
+            def prepare_filename(self, info):
+                return disk_file_path
+
+        with patch("yt_dlp.YoutubeDL", side_effect=MockSizeFallbackYoutubeDL):
+            run_download_thread(task_id, req, db_path=test_db)
+
+        completed = get_task(task_id, db_path=test_db)
+        assert completed is not None
+        assert completed.status == "finished"
+        assert completed.total_bytes == 45678
+        assert completed.downloaded_bytes == 45678
+
+        files = list_media_files(category="video", in_vault=False, db_path=test_db)
+        assert len(files) == 1
+        assert files[0].filesize == 45678
+        assert files[0].filename == Path(disk_file_path).name
+        assert files[0].filepath == disk_file_path
+    finally:
+        if os.path.exists(disk_file_path):
+            os.remove(disk_file_path)
+
