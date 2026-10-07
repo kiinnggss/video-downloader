@@ -28,10 +28,15 @@ def test_parse_range_header_edge_cases():
     assert start == 0
     assert end == 999
 
-    # Suffix range like bytes=-400
+    # Suffix range like bytes=-400 yields last 400 bytes (600-999)
     start, end = parse_range_header("bytes=-400", 1000)
+    assert start == 600
+    assert end == 999
+
+    # Suffix range larger than file size clamps start to 0
+    start, end = parse_range_header("bytes=-1500", 1000)
     assert start == 0
-    assert end == 400
+    assert end == 999
 
     # End exceeding file size clamps to file_size - 1
     start, end = parse_range_header("bytes=500-2000", 1000)
@@ -55,7 +60,7 @@ async def test_stream_file_range_full(tmp_path: Path):
     assert isinstance(response, StreamingResponse)
     assert response.status_code == 200
     assert response.headers["Content-Length"] == "2048"
-    assert response.headers["Content-Range"] == "bytes 0-2047/2048"
+    assert "Content-Range" not in response.headers
     assert response.headers["Accept-Ranges"] == "bytes"
     assert response.headers["Content-Type"] == "video/mp4"
 
@@ -80,6 +85,24 @@ async def test_stream_file_range_partial(tmp_path: Path):
     chunks = [chunk async for chunk in response.body_iterator]
     body = b"".join(chunks)
     assert body == content[100:200]
+
+
+@pytest.mark.anyio
+async def test_stream_file_range_suffix(tmp_path: Path):
+    test_file = tmp_path / "sample.mp4"
+    content = bytes(range(256)) * 4  # 1024 bytes
+    test_file.write_bytes(content)
+
+    response = stream_file_range(str(test_file), range_header="bytes=-200")
+    assert isinstance(response, StreamingResponse)
+    assert response.status_code == 206
+    assert response.headers["Content-Length"] == "200"
+    assert response.headers["Content-Range"] == "bytes 824-1023/1024"
+    assert response.headers["Accept-Ranges"] == "bytes"
+
+    chunks = [chunk async for chunk in response.body_iterator]
+    body = b"".join(chunks)
+    assert body == content[-200:]
 
 
 @pytest.mark.anyio

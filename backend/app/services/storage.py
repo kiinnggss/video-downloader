@@ -17,8 +17,14 @@ def parse_range_header(range_header: Optional[str], file_size: int) -> Tuple[int
         return 0, file_size - 1
 
     try:
-        start = int(parts[0]) if parts[0] else 0
-        end = int(parts[1]) if parts[1] else file_size - 1
+        if not parts[0]:
+            # Suffix byte range: e.g. "bytes=-500"
+            suffix_len = int(parts[1])
+            start = max(0, file_size - suffix_len)
+            end = file_size - 1
+        else:
+            start = int(parts[0])
+            end = int(parts[1]) if parts[1] else file_size - 1
     except ValueError:
         return 0, file_size - 1
 
@@ -60,11 +66,13 @@ def stream_file_range(
                 remaining -= len(data)
                 yield data
 
+    status_code = 206 if range_header else 200
     headers = {
-        "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Accept-Ranges": "bytes",
         "Content-Length": str(content_length),
         "Content-Type": content_type,
     }
-    status_code = 206 if range_header else 200
+    if status_code == 206:
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+
     return StreamingResponse(iter_file(), status_code=status_code, headers=headers)
