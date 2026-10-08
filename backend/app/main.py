@@ -14,9 +14,6 @@ from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
 from app.db import init_db, list_media_files, get_connection
 
-init_db()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
