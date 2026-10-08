@@ -69,7 +69,14 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
                     {isFmtAudio ? <Music size={18} /> : <Film size={18} />}
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-sm text-slate-900">{fmt.resolution}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm text-slate-900">{fmt.resolution}</p>
+                      {fmt.filesize_approx ? (
+                        <span className="text-[11px] font-mono text-slate-400">
+                          ~{(fmt.filesize_approx / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="text-xs text-slate-500">{fmt.note}</p>
                   </div>
                 </div>

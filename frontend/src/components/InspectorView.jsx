@@ -82,7 +82,7 @@ export function InspectorView({ onDownloadStarted }) {
               alt={inspectData.title} 
               className="w-full h-full object-cover" 
             />
-            <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-white text-[11px] font-mono">
+            <span className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-xl text-white text-[11px] font-mono">
               {Math.floor((inspectData.duration || 0) / 60)}:{String((inspectData.duration || 0) % 60).padStart(2, '0')}
             </span>
           </div>

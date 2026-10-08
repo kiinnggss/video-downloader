@@ -272,3 +272,60 @@ async def test_vault_files_endpoint():
         data = res_authorized.json()
         assert len(data) == 1
         assert data[0]["file_id"] == "vault-file-1"
+
+
+async def test_vault_stream_and_download_requires_auth(tmp_path):
+    media_path = tmp_path / "secret.mp4"
+    media_path.write_bytes(b"A" * 1024)
+    vault_media = MediaFile(
+        file_id="vault-stream-1",
+        title="Protected Media",
+        filename="secret.mp4",
+        filepath=str(media_path),
+        category="video",
+        filesize=1024,
+        duration=30,
+        in_vault=True,
+    )
+    save_media_file(vault_media)
+
+    token = generate_vault_token()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # Stream without auth -> 401
+        res_stream_noauth = await ac.get("/api/files/vault-stream-1/stream")
+        assert res_stream_noauth.status_code == 401
+
+        # Stream with auth -> 200
+        res_stream_auth = await ac.get("/api/files/vault-stream-1/stream", headers={"Authorization": f"Bearer {token}"})
+        assert res_stream_auth.status_code == 200
+
+        # Download without auth -> 401
+        res_dl_noauth = await ac.get("/api/files/vault-stream-1/download")
+        assert res_dl_noauth.status_code == 401
+
+        # Download with auth -> 200
+        res_dl_auth = await ac.get("/api/files/vault-stream-1/download", headers={"Authorization": f"Bearer {token}"})
+        assert res_dl_auth.status_code == 200
+
+
+async def test_inspect_drm_returns_403():
+    with patch("app.main.extract_video_info", side_effect=RuntimeError("Encrypted media Widevine DRM error")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            res = await ac.post("/api/inspect", json={"url": "https://protected-drm.com/video"})
+            assert res.status_code == 403
+            assert "DRM-protected" in res.json()["detail"]
+
+
+async def test_get_files_download_category_returns_all_downloads():
+    f1 = MediaFile(file_id="f1", title="V1", filename="v1.mp4", filepath="/tmp/v1.mp4", category="video", filesize=500, duration=30)
+    f2 = MediaFile(file_id="f2", title="M1", filename="m1.mp3", filepath="/tmp/m1.mp3", category="music", filesize=200, duration=20)
+    save_media_file(f1)
+    save_media_file(f2)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.get("/api/files?category=download")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) >= 2
+
+

@@ -99,7 +99,7 @@ def list_media_files(category: Optional[str] = None, in_vault: bool = False, db_
     cursor = conn.cursor()
     query = "SELECT * FROM media_files WHERE in_vault = ?"
     params = [1 if in_vault else 0]
-    if category and category != "all":
+    if category and category not in ("all", "download"):
         query += " AND category = ?"
         params.append(category)
     cursor.execute(query, params)
@@ -118,3 +118,24 @@ def list_media_files(category: Optional[str] = None, in_vault: bool = False, db_
             in_vault=bool(r["in_vault"])
         ) for r in rows
     ]
+
+def get_media_file(file_id: str, db_path: str = None) -> Optional[MediaFile]:
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM media_files WHERE file_id = ?", (file_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return MediaFile(
+        file_id=row["file_id"],
+        title=row["title"],
+        filename=row["filename"],
+        filepath=row["filepath"],
+        category=row["category"],
+        filesize=row["filesize"],
+        duration=row["duration"],
+        thumbnail=row["thumbnail"],
+        in_vault=bool(row["in_vault"])
+    )
+

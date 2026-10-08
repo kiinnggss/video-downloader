@@ -12,7 +12,7 @@ from app.services.extractor import extract_video_info
 from app.services.downloader import start_download, subscribe_telemetry
 from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
-from app.db import init_db, list_media_files, get_connection
+from app.db import init_db, list_media_files, get_media_file
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,7 +36,10 @@ def inspect_url(req: InspectRequest):
     try:
         return extract_video_info(req.url)
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Failed to inspect URL: {str(e)}")
+        err_msg = str(e)
+        if "drm" in err_msg.lower() or "widevine" in err_msg.lower() or "encrypted" in err_msg.lower():
+            raise HTTPException(status_code=403, detail="Stream is DRM-protected and cannot be extracted")
+        raise HTTPException(status_code=422, detail=f"Failed to inspect URL: {err_msg}")
 
 
 @app.post("/api/downloads")
@@ -63,28 +66,29 @@ def get_files(category: Optional[str] = Query(None)):
 
 
 @app.get("/api/files/{file_id}/stream")
-def stream_media(file_id: str, request: Request):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT filepath FROM media_files WHERE file_id = ?", (file_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if not row:
+def stream_media(file_id: str, request: Request, authorization: Optional[str] = Header(None)):
+    media = get_media_file(file_id)
+    if not media:
         raise HTTPException(status_code=404, detail="Media not found")
+    if media.in_vault:
+        token = authorization.replace("Bearer ", "").strip() if authorization else ""
+        if not verify_vault_token(token):
+            raise HTTPException(status_code=401, detail="Vault locked")
     range_header = request.headers.get("Range")
-    return stream_file_range(row["filepath"], range_header)
+    return stream_file_range(media.filepath, range_header)
 
 
 @app.get("/api/files/{file_id}/download")
-def download_media(file_id: str):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT filepath, filename FROM media_files WHERE file_id = ?", (file_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if not row or not os.path.exists(row["filepath"]):
+def download_media(file_id: str, authorization: Optional[str] = Header(None)):
+    media = get_media_file(file_id)
+    if not media or not os.path.exists(media.filepath):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(row["filepath"], filename=row["filename"])
+    if media.in_vault:
+        token = authorization.replace("Bearer ", "").strip() if authorization else ""
+        if not verify_vault_token(token):
+            raise HTTPException(status_code=401, detail="Vault locked")
+    return FileResponse(media.filepath, filename=media.filename)
+
 
 
 @app.post("/api/vault/unlock")
