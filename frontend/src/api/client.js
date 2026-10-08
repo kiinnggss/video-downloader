@@ -6,7 +6,7 @@ export const apiClient = {
       body: JSON.stringify({ url }),
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Inspection failed');
     }
     return res.json();
@@ -18,13 +18,20 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, format_id, is_audio, in_vault }),
     });
-    if (!res.ok) throw new Error('Download failed to start');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Download failed to start');
+    }
     return res.json();
   },
 
   async getFiles(category) {
     const q = category ? `?category=${category}` : '';
     const res = await fetch(`/api/files${q}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to fetch files');
+    }
     return res.json();
   },
 
