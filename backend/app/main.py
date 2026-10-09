@@ -106,3 +106,16 @@ def get_vault_files(authorization: Optional[str] = Header(None)):
     if not verify_vault_token(token):
         raise HTTPException(status_code=401, detail="Vault locked")
     return list_media_files(category=None, in_vault=True)
+
+
+# Mount compiled frontend assets in production if present
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+
+frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+if not frontend_dir.exists():
+    frontend_dir = Path("/app/frontend/dist")
+
+if frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
