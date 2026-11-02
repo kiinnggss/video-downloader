@@ -24,6 +24,7 @@ class DownloadRequest(BaseModel):
     format_id: str
     is_audio: bool = False
     in_vault: bool = False
+    device_id: Optional[str] = None
 
 class DownloadTask(BaseModel):
     task_id: str
@@ -38,6 +39,7 @@ class DownloadTask(BaseModel):
     in_vault: bool = False
     file_id: Optional[str] = None
     filename: Optional[str] = None
+    device_id: Optional[str] = None
 
 class MediaFile(BaseModel):
     file_id: str
@@ -49,3 +51,4 @@ class MediaFile(BaseModel):
     duration: int
     thumbnail: Optional[str] = None
     in_vault: bool = False
+    device_id: Optional[str] = None

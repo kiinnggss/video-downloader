@@ -1,8 +1,25 @@
+export function getDeviceId() {
+  if (typeof window === 'undefined') return 'server';
+  let id = localStorage.getItem('crystal_device_id');
+  if (!id) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      id = crypto.randomUUID();
+    } else {
+      id = 'dev_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    }
+    localStorage.setItem('crystal_device_id', id);
+  }
+  return id;
+}
+
 export const apiClient = {
   async inspect(url) {
     const res = await fetch('/api/inspect', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': getDeviceId(),
+      },
       body: JSON.stringify({ url }),
     });
     if (!res.ok) {
@@ -13,10 +30,14 @@ export const apiClient = {
   },
 
   async startDownload({ url, format_id, is_audio, in_vault }) {
+    const deviceId = getDeviceId();
     const res = await fetch('/api/downloads', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, format_id, is_audio, in_vault }),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': deviceId,
+      },
+      body: JSON.stringify({ url, format_id, is_audio, in_vault, device_id: deviceId }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -26,7 +47,12 @@ export const apiClient = {
   },
 
   async pauseDownload(taskId) {
-    const res = await fetch(`/api/downloads/${taskId}/pause`, { method: 'POST' });
+    const res = await fetch(`/api/downloads/${taskId}/pause`, {
+      method: 'POST',
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to pause download');
@@ -35,7 +61,12 @@ export const apiClient = {
   },
 
   async resumeDownload(taskId) {
-    const res = await fetch(`/api/downloads/${taskId}/resume`, { method: 'POST' });
+    const res = await fetch(`/api/downloads/${taskId}/resume`, {
+      method: 'POST',
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to resume download');
@@ -44,7 +75,12 @@ export const apiClient = {
   },
 
   async cancelDownload(taskId) {
-    const res = await fetch(`/api/downloads/${taskId}/cancel`, { method: 'POST' });
+    const res = await fetch(`/api/downloads/${taskId}/cancel`, {
+      method: 'POST',
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to cancel download');
@@ -54,7 +90,11 @@ export const apiClient = {
 
   async getFiles(category) {
     const q = category ? `?category=${category}` : '';
-    const res = await fetch(`/api/files${q}`);
+    const res = await fetch(`/api/files${q}`, {
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to fetch files');
@@ -65,7 +105,10 @@ export const apiClient = {
   async unlockVault(pin) {
     const res = await fetch('/api/vault/unlock', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': getDeviceId(),
+      },
       body: JSON.stringify({ pin }),
     });
     if (!res.ok) throw new Error('Invalid PIN');
@@ -74,7 +117,10 @@ export const apiClient = {
 
   async getVaultFiles(token) {
     const res = await fetch('/api/vault/files', {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Device-Id': getDeviceId(),
+      },
     });
     if (!res.ok) throw new Error('Vault locked');
     return res.json();

@@ -119,8 +119,8 @@ async def test_create_download_endpoint_error():
 
 
 async def test_stream_telemetry_endpoint():
-    async def mock_telemetry():
-        yield {"task_id": "t1", "progress": 55.5, "status": "downloading"}
+    async def mock_telemetry(device_id=None):
+        yield {"task_id": "t1", "progress": 55.5, "status": "downloading", "device_id": device_id}
 
     with patch("app.main.subscribe_telemetry", side_effect=mock_telemetry):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -357,5 +357,31 @@ async def test_get_files_download_category_returns_all_downloads():
         assert res.status_code == 200
         data = res.json()
         assert len(data) >= 2
+
+
+async def test_device_isolation_files():
+    dev_a = "device-alpha-123"
+    dev_b = "device-beta-456"
+
+    f_a = MediaFile(file_id="fa1", title="Alpha Video", filename="fa1.mp4", filepath="/tmp/fa1.mp4", category="video", filesize=500, duration=30, device_id=dev_a)
+    f_b = MediaFile(file_id="fb1", title="Beta Video", filename="fb1.mp4", filepath="/tmp/fb1.mp4", category="video", filesize=200, duration=20, device_id=dev_b)
+    save_media_file(f_a)
+    save_media_file(f_b)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # Request with device A header
+        res_a = await ac.get("/api/files", headers={"X-Device-Id": dev_a})
+        assert res_a.status_code == 200
+        items_a = res_a.json()
+        assert any(item["file_id"] == "fa1" for item in items_a)
+        assert not any(item["file_id"] == "fb1" for item in items_a)
+
+        # Request with device B header
+        res_b = await ac.get("/api/files", headers={"X-Device-Id": dev_b})
+        assert res_b.status_code == 200
+        items_b = res_b.json()
+        assert any(item["file_id"] == "fb1" for item in items_b)
+        assert not any(item["file_id"] == "fa1" for item in items_b)
+
 
 

@@ -54,8 +54,10 @@ def inspect_url(req: InspectRequest):
 
 
 @app.post("/api/downloads")
-def create_download(req: DownloadRequest):
+def create_download(req: DownloadRequest, x_device_id: Optional[str] = Header(None, alias="X-Device-Id")):
     try:
+        if not req.device_id and x_device_id:
+            req.device_id = x_device_id
         task_id = start_download(req)
         return {"task_id": task_id, "status": "queued"}
     except Exception as e:
@@ -87,17 +89,19 @@ def cancel_task(task_id: str):
 
 
 @app.get("/api/downloads/stream")
-async def stream_telemetry():
+async def stream_telemetry(device_id: Optional[str] = Query(None), x_device_id: Optional[str] = Header(None, alias="X-Device-Id")):
+    target_device = device_id or x_device_id
     async def event_generator():
-        async for data in subscribe_telemetry():
+        async for data in subscribe_telemetry(target_device):
             yield {"event": "progress", "data": json.dumps(data)}
 
     return EventSourceResponse(event_generator())
 
 
 @app.get("/api/files")
-def get_files(category: Optional[str] = Query(None)):
-    return list_media_files(category=category, in_vault=False)
+def get_files(category: Optional[str] = Query(None), x_device_id: Optional[str] = Header(None, alias="X-Device-Id"), device_id: Optional[str] = Query(None)):
+    target_device = device_id or x_device_id
+    return list_media_files(category=category, in_vault=False, device_id=target_device)
 
 
 @app.get("/api/files/{file_id}/stream")
@@ -136,11 +140,12 @@ def unlock_vault(payload: dict):
 
 
 @app.get("/api/vault/files")
-def get_vault_files(authorization: Optional[str] = Header(None)):
+def get_vault_files(authorization: Optional[str] = Header(None), x_device_id: Optional[str] = Header(None, alias="X-Device-Id"), device_id: Optional[str] = Query(None)):
     token = authorization.replace("Bearer ", "").strip() if authorization else ""
     if not verify_vault_token(token):
         raise HTTPException(status_code=401, detail="Vault locked")
-    return list_media_files(category=None, in_vault=True)
+    target_device = device_id or x_device_id
+    return list_media_files(category=None, in_vault=True, device_id=target_device)
 
 
 # Mount compiled frontend assets in production if present

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { getDeviceId } from './client';
 
 export function useTelemetry() {
   const [activeTask, setActiveTask] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
   useEffect(() => {
-    const sse = new EventSource('/api/downloads/stream');
+    const deviceId = getDeviceId();
+    const streamUrl = `/api/downloads/stream?device_id=${encodeURIComponent(deviceId)}`;
+    const sse = new EventSource(streamUrl);
     sse.addEventListener('progress', (e) => {
       try {
         const data = JSON.parse(e.data);

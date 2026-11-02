@@ -155,7 +155,8 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
                     downloaded_bytes=int(d.get("downloaded_bytes") or 0),
                     total_bytes=int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0),
                     eta_seconds=None,
-                    in_vault=req.in_vault
+                    in_vault=req.in_vault,
+                    device_id=req.device_id,
                 )
                 save_task(task_paused, db_path=db_path)
                 broadcast_telemetry(task_paused.model_dump())
@@ -183,7 +184,8 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             downloaded_bytes=downloaded,
             total_bytes=total,
             eta_seconds=int(eta) if eta is not None else None,
-            in_vault=req.in_vault
+            in_vault=req.in_vault,
+            device_id=req.device_id,
         )
 
         now = time.time()
@@ -240,7 +242,8 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
                 filesize=filesize,
                 duration=int(info.get("duration") or 0),
                 thumbnail=info.get("thumbnail"),
-                in_vault=req.in_vault
+                in_vault=req.in_vault,
+                device_id=req.device_id,
             )
             save_media_file(media, db_path=db_path)
             
@@ -256,6 +259,7 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
                 in_vault=req.in_vault,
                 file_id=media.file_id,
                 filename=media.filename,
+                device_id=req.device_id,
             )
             save_task(completed_task, db_path=db_path)
             broadcast_telemetry(completed_task.model_dump())
@@ -269,7 +273,8 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             speed="0 Mb/s",
             downloaded_bytes=0,
             total_bytes=0,
-            in_vault=req.in_vault
+            in_vault=req.in_vault,
+            device_id=req.device_id,
         )
         save_task(cancelled_task, db_path=db_path)
         broadcast_telemetry(cancelled_task.model_dump())
@@ -284,7 +289,8 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             speed="0 Mb/s",
             downloaded_bytes=0,
             total_bytes=0,
-            in_vault=req.in_vault
+            in_vault=req.in_vault,
+            device_id=req.device_id,
         )
         save_task(failed_task, db_path=db_path)
         broadcast_telemetry(failed_task.model_dump())
@@ -303,14 +309,15 @@ def start_download(req: DownloadRequest, db_path: str = None) -> str:
         speed="0 Mb/s",
         downloaded_bytes=0,
         total_bytes=0,
-        in_vault=req.in_vault
+        in_vault=req.in_vault,
+        device_id=req.device_id,
     )
     save_task(task, db_path=db_path)
     t = threading.Thread(target=run_download_thread, args=(task_id, req, db_path), daemon=True)
     t.start()
     return task_id
 
-async def subscribe_telemetry() -> AsyncGenerator[Dict[str, Any], None]:
+async def subscribe_telemetry(device_id: Optional[str] = None) -> AsyncGenerator[Dict[str, Any], None]:
     loop = asyncio.get_running_loop()
     q = asyncio.Queue()
     q._loop = loop
@@ -319,7 +326,8 @@ async def subscribe_telemetry() -> AsyncGenerator[Dict[str, Any], None]:
     try:
         while True:
             item = await q.get()
-            yield item
+            if not device_id or not item.get("device_id") or item.get("device_id") == device_id:
+                yield item
     finally:
         with lock:
             if q in active_subscribers:
