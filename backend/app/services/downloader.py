@@ -13,6 +13,93 @@ from app.config import PUBLIC_STORAGE, VAULT_STORAGE, DB_PATH
 active_subscribers = []
 lock = threading.Lock()
 
+class DownloadCancelledException(Exception):
+    pass
+
+class DownloadController:
+    def __init__(self, task_id: str, req: DownloadRequest):
+        self.task_id = task_id
+        self.req = req
+        self.pause_event = threading.Event()
+        self.pause_event.set()
+        self.cancelled = False
+
+controllers: Dict[str, DownloadController] = {}
+controllers_lock = threading.Lock()
+
+def get_controller(task_id: str) -> Optional[DownloadController]:
+    with controllers_lock:
+        return controllers.get(task_id)
+
+def register_controller(task_id: str, req: DownloadRequest) -> DownloadController:
+    ctrl = DownloadController(task_id, req)
+    with controllers_lock:
+        controllers[task_id] = ctrl
+    return ctrl
+
+def remove_controller(task_id: str):
+    with controllers_lock:
+        controllers.pop(task_id, None)
+
+def pause_download(task_id: str, db_path: str = None) -> bool:
+    ctrl = get_controller(task_id)
+    if not ctrl:
+        return False
+    ctrl.pause_event.clear()
+    task = get_task(task_id, db_path=db_path)
+    if task:
+        task.status = "paused"
+        task.speed = "0 Mb/s"
+        save_task(task, db_path=db_path)
+        broadcast_telemetry(task.model_dump())
+    return True
+
+def resume_download(task_id: str, db_path: str = None) -> bool:
+    ctrl = get_controller(task_id)
+    if not ctrl:
+        return False
+    ctrl.pause_event.set()
+    task = get_task(task_id, db_path=db_path)
+    if task:
+        task.status = "downloading"
+        save_task(task, db_path=db_path)
+        broadcast_telemetry(task.model_dump())
+    return True
+
+def cancel_download(task_id: str, db_path: str = None) -> bool:
+    ctrl = get_controller(task_id)
+    if not ctrl:
+        task = get_task(task_id, db_path=db_path)
+        if task and task.status not in ("finished", "cancelled", "error"):
+            task.status = "cancelled"
+            task.speed = "0 Mb/s"
+            save_task(task, db_path=db_path)
+            broadcast_telemetry(task.model_dump())
+            return True
+        return False
+    ctrl.cancelled = True
+    ctrl.pause_event.set()
+    task = get_task(task_id, db_path=db_path)
+    if task:
+        task.status = "cancelled"
+        task.speed = "0 Mb/s"
+        save_task(task, db_path=db_path)
+        broadcast_telemetry(task.model_dump())
+    return True
+
+def cleanup_partial_files(target_dir: Path, task_id: str):
+    try:
+        short_id = task_id[:8]
+        if target_dir.exists():
+            for p in target_dir.glob(f"*{short_id}*"):
+                try:
+                    if p.is_file():
+                        p.unlink()
+                except OSError:
+                    pass
+    except Exception:
+        pass
+
 def format_speed(bytes_per_sec: float) -> str:
     if not bytes_per_sec or bytes_per_sec <= 0:
         return "0 Mb/s"
@@ -38,6 +125,10 @@ def broadcast_telemetry(payload: Dict[str, Any]):
             pass
 
 def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None):
+    ctrl = get_controller(task_id)
+    if not ctrl:
+        ctrl = register_controller(task_id, req)
+
     target_dir = VAULT_STORAGE if req.in_vault else (
         PUBLIC_STORAGE / "music" if req.is_audio else PUBLIC_STORAGE / "videos"
     )
@@ -49,6 +140,30 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
 
     def progress_hook(d: Dict[str, Any]):
         nonlocal last_db_save_time, last_saved_status
+        if ctrl.cancelled:
+            raise DownloadCancelledException("Download cancelled by user")
+
+        while not ctrl.pause_event.is_set():
+            if last_saved_status != "paused":
+                task_paused = DownloadTask(
+                    task_id=task_id,
+                    url=req.url,
+                    title="Paused",
+                    status="paused",
+                    progress=calculate_progress(int(d.get("downloaded_bytes") or 0), int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0)),
+                    speed="0 Mb/s",
+                    downloaded_bytes=int(d.get("downloaded_bytes") or 0),
+                    total_bytes=int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0),
+                    eta_seconds=None,
+                    in_vault=req.in_vault
+                )
+                save_task(task_paused, db_path=db_path)
+                broadcast_telemetry(task_paused.model_dump())
+                last_saved_status = "paused"
+            time.sleep(0.3)
+            if ctrl.cancelled:
+                raise DownloadCancelledException("Download cancelled by user")
+
         status = d.get("status") or "downloading"
         downloaded = int(d.get("downloaded_bytes") or 0)
         total = int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0)
@@ -141,6 +256,21 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             )
             save_task(completed_task, db_path=db_path)
             broadcast_telemetry(completed_task.model_dump())
+    except DownloadCancelledException:
+        cancelled_task = DownloadTask(
+            task_id=task_id,
+            url=req.url,
+            title="Download Cancelled",
+            status="cancelled",
+            progress=0.0,
+            speed="0 Mb/s",
+            downloaded_bytes=0,
+            total_bytes=0,
+            in_vault=req.in_vault
+        )
+        save_task(cancelled_task, db_path=db_path)
+        broadcast_telemetry(cancelled_task.model_dump())
+        cleanup_partial_files(target_dir, task_id)
     except Exception as e:
         failed_task = DownloadTask(
             task_id=task_id,
@@ -155,9 +285,12 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         )
         save_task(failed_task, db_path=db_path)
         broadcast_telemetry(failed_task.model_dump())
+    finally:
+        remove_controller(task_id)
 
 def start_download(req: DownloadRequest, db_path: str = None) -> str:
     task_id = str(uuid.uuid4())
+    register_controller(task_id, req)
     task = DownloadTask(
         task_id=task_id,
         url=req.url,

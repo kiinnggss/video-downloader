@@ -25,6 +25,33 @@ export const apiClient = {
     return res.json();
   },
 
+  async pauseDownload(taskId) {
+    const res = await fetch(`/api/downloads/${taskId}/pause`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to pause download');
+    }
+    return res.json();
+  },
+
+  async resumeDownload(taskId) {
+    const res = await fetch(`/api/downloads/${taskId}/resume`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to resume download');
+    }
+    return res.json();
+  },
+
+  async cancelDownload(taskId) {
+    const res = await fetch(`/api/downloads/${taskId}/cancel`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to cancel download');
+    }
+    return res.json();
+  },
+
   async getFiles(category) {
     const q = category ? `?category=${category}` : '';
     const res = await fetch(`/api/files${q}`);

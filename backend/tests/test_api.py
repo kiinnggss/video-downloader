@@ -73,6 +73,36 @@ async def test_create_download_endpoint():
             assert data["status"] == "queued"
 
 
+async def test_download_pause_resume_cancel_endpoints():
+    with patch("app.main.pause_download", side_effect=lambda tid: tid == "task-active"), \
+         patch("app.main.resume_download", side_effect=lambda tid: tid == "task-active"), \
+         patch("app.main.cancel_download", side_effect=lambda tid: tid == "task-active"):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            # Test pause success and 404
+            res_pause = await ac.post("/api/downloads/task-active/pause")
+            assert res_pause.status_code == 200
+            assert res_pause.json()["status"] == "paused"
+
+            res_pause_404 = await ac.post("/api/downloads/task-nonexistent/pause")
+            assert res_pause_404.status_code == 404
+
+            # Test resume success and 404
+            res_resume = await ac.post("/api/downloads/task-active/resume")
+            assert res_resume.status_code == 200
+            assert res_resume.json()["status"] == "downloading"
+
+            res_resume_404 = await ac.post("/api/downloads/task-nonexistent/resume")
+            assert res_resume_404.status_code == 404
+
+            # Test cancel success and 404
+            res_cancel = await ac.post("/api/downloads/task-active/cancel")
+            assert res_cancel.status_code == 200
+            assert res_cancel.json()["status"] == "cancelled"
+
+            res_cancel_404 = await ac.post("/api/downloads/task-nonexistent/cancel")
+            assert res_cancel_404.status_code == 404
+
+
 async def test_create_download_endpoint_error():
     with patch("app.main.start_download", side_effect=RuntimeError("Queue failed")):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

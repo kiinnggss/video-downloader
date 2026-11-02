@@ -9,7 +9,13 @@ from sse_starlette.sse import EventSourceResponse
 
 from app.models import InspectRequest, InspectResponse, DownloadRequest, DownloadTask
 from app.services.extractor import extract_video_info
-from app.services.downloader import start_download, subscribe_telemetry
+from app.services.downloader import (
+    start_download,
+    subscribe_telemetry,
+    pause_download,
+    resume_download,
+    cancel_download,
+)
 from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
 from app.db import init_db, list_media_files, get_media_file
@@ -54,6 +60,30 @@ def create_download(req: DownloadRequest):
         return {"task_id": task_id, "status": "queued"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start download: {str(e)}")
+
+
+@app.post("/api/downloads/{task_id}/pause")
+def pause_task(task_id: str):
+    success = pause_download(task_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found or cannot be paused")
+    return {"status": "paused", "task_id": task_id}
+
+
+@app.post("/api/downloads/{task_id}/resume")
+def resume_task(task_id: str):
+    success = resume_download(task_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found or cannot be resumed")
+    return {"status": "downloading", "task_id": task_id}
+
+
+@app.post("/api/downloads/{task_id}/cancel")
+def cancel_task(task_id: str):
+    success = cancel_download(task_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Task not found or cannot be cancelled")
+    return {"status": "cancelled", "task_id": task_id}
 
 
 @app.get("/api/downloads/stream")

@@ -387,3 +387,35 @@ def test_run_download_thread_filesize_fallback_and_path_name(test_db):
         if os.path.exists(disk_file_path):
             os.remove(disk_file_path)
 
+def test_pause_resume_cancel_controls(test_db):
+    from app.services.downloader import (
+        register_controller,
+        pause_download,
+        resume_download,
+        cancel_download,
+        get_controller,
+        remove_controller,
+    )
+    req = DownloadRequest(url="https://example.com/test", format_id="best")
+    task_id = "task-control-1"
+    ctrl = register_controller(task_id, req)
+    assert ctrl is not None
+    assert ctrl.pause_event.is_set()
+    assert not ctrl.cancelled
+
+    # Test pause
+    assert pause_download(task_id, db_path=test_db) is True
+    assert not ctrl.pause_event.is_set()
+
+    # Test resume
+    assert resume_download(task_id, db_path=test_db) is True
+    assert ctrl.pause_event.is_set()
+
+    # Test cancel
+    assert cancel_download(task_id, db_path=test_db) is True
+    assert ctrl.cancelled is True
+
+    remove_controller(task_id)
+    assert get_controller(task_id) is None
+
+
