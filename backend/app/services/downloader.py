@@ -84,6 +84,11 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         "progress_hooks": [progress_hook],
         "quiet": True,
         "no_warnings": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["ios", "android", "mweb"]
+            }
+        },
     }
     if req.is_audio:
         ydl_opts["format"] = "bestaudio/best"

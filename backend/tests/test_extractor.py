@@ -91,5 +91,10 @@ def test_extract_video_info():
             "no_warnings": True,
             "skip_download": True,
             "noplaylist": True,
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["ios", "android", "mweb"]
+                }
+            },
         })
         mock_ydl.extract_info.assert_called_once_with("https://example.com/watch?v=123", download=False)
