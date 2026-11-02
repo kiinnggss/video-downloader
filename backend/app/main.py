@@ -33,7 +33,7 @@ app.add_middleware(
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "build": "v2-bot-fix"}
 
 
 @app.post("/api/inspect", response_model=InspectResponse)
