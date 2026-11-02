@@ -74,6 +74,7 @@ def extract_video_info(url: str) -> InspectResponse:
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
+        "js_runtimes": {"node": {}},
         "extractor_args": {
             "youtube": {
                 "player_client": ["ios", "android", "mweb"]

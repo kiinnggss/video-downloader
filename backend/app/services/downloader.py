@@ -199,6 +199,7 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         "progress_hooks": [progress_hook],
         "quiet": True,
         "no_warnings": True,
+        "js_runtimes": {"node": {}},
         "extractor_args": {
             "youtube": {
                 "player_client": ["ios", "android", "mweb"]

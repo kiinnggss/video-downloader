@@ -12,10 +12,11 @@ RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app
 
-# Install system dependencies: ffmpeg for media merging and audio extraction, curl for health checks
+# Install system dependencies: ffmpeg for media merging and audio extraction, curl for health checks, nodejs for yt-dlp JS challenges
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python requirements

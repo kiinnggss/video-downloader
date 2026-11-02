@@ -91,6 +91,7 @@ def test_extract_video_info():
             "no_warnings": True,
             "skip_download": True,
             "noplaylist": True,
+            "js_runtimes": {"node": {}},
             "extractor_args": {
                 "youtube": {
                     "player_client": ["ios", "android", "mweb"]
