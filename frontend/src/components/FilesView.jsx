@@ -83,10 +83,11 @@ export function FilesView({ activeTask }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
+                  type="button"
                   onClick={() => setSelectedMedia(file)}
-                  className="p-2 rounded-full hover:bg-slate-200/50 text-slate-600"
+                  className="p-2 rounded-full hover:bg-slate-200/50 text-slate-700 transition-colors"
                   title="Play"
                 >
                   <Play size={16} />
@@ -94,10 +95,11 @@ export function FilesView({ activeTask }) {
                 <a
                   href={`/api/files/${file.file_id}/download`}
                   download={file.filename}
-                  className="p-2 rounded-full hover:bg-slate-200/50 text-slate-600"
-                  title="Save to Phone"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-all active:scale-95"
+                  title="Save to Phone / Device"
                 >
-                  <Download size={16} />
+                  <Download size={13} />
+                  <span>Save</span>
                 </a>
               </div>
             </div>

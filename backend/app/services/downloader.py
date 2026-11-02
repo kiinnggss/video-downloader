@@ -253,7 +253,9 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
                 speed="0 Mb/s",
                 downloaded_bytes=media.filesize,
                 total_bytes=media.filesize,
-                in_vault=req.in_vault
+                in_vault=req.in_vault,
+                file_id=media.file_id,
+                filename=media.filename,
             )
             save_task(completed_task, db_path=db_path)
             broadcast_telemetry(completed_task.model_dump())

@@ -23,9 +23,19 @@ def init_db(db_path: str = None):
                 downloaded_bytes INTEGER DEFAULT 0,
                 total_bytes INTEGER DEFAULT 0,
                 eta_seconds INTEGER,
-                in_vault INTEGER DEFAULT 0
+                in_vault INTEGER DEFAULT 0,
+                file_id TEXT,
+                filename TEXT
             )
         """)
+        try:
+            conn.execute("ALTER TABLE tasks ADD COLUMN file_id TEXT")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE tasks ADD COLUMN filename TEXT")
+        except sqlite3.OperationalError:
+            pass
         conn.execute("""
             CREATE TABLE IF NOT EXISTS media_files (
                 file_id TEXT PRIMARY KEY,
@@ -52,11 +62,12 @@ def save_task(task: DownloadTask, db_path: str = None):
     with conn:
         conn.execute("""
             INSERT OR REPLACE INTO tasks 
-            (task_id, url, title, status, progress, speed, downloaded_bytes, total_bytes, eta_seconds, in_vault)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (task_id, url, title, status, progress, speed, downloaded_bytes, total_bytes, eta_seconds, in_vault, file_id, filename)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             task.task_id, task.url, task.title, task.status, task.progress, task.speed,
-            task.downloaded_bytes, task.total_bytes, task.eta_seconds, 1 if task.in_vault else 0
+            task.downloaded_bytes, task.total_bytes, task.eta_seconds, 1 if task.in_vault else 0,
+            task.file_id, task.filename
         ))
     conn.close()
 
@@ -68,6 +79,7 @@ def get_task(task_id: str, db_path: str = None) -> Optional[DownloadTask]:
     conn.close()
     if not row:
         return None
+    keys = row.keys()
     return DownloadTask(
         task_id=row["task_id"],
         url=row["url"],
@@ -78,7 +90,9 @@ def get_task(task_id: str, db_path: str = None) -> Optional[DownloadTask]:
         downloaded_bytes=row["downloaded_bytes"],
         total_bytes=row["total_bytes"],
         eta_seconds=row["eta_seconds"],
-        in_vault=bool(row["in_vault"])
+        in_vault=bool(row["in_vault"]),
+        file_id=row["file_id"] if "file_id" in keys else None,
+        filename=row["filename"] if "filename" in keys else None,
     )
 
 def save_media_file(media: MediaFile, db_path: str = None):

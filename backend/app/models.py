@@ -36,6 +36,8 @@ class DownloadTask(BaseModel):
     total_bytes: int = 0
     eta_seconds: Optional[int] = None
     in_vault: bool = False
+    file_id: Optional[str] = None
+    filename: Optional[str] = None
 
 class MediaFile(BaseModel):
     file_id: str
