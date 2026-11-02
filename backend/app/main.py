@@ -31,6 +31,11 @@ app.add_middleware(
 )
 
 
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 @app.post("/api/inspect", response_model=InspectResponse)
 def inspect_url(req: InspectRequest):
     try:
