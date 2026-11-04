@@ -9,12 +9,14 @@ export function InspectorView({ onDownloadStarted }) {
   const [inspectData, setInspectData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
 
   const handleInspect = async (e) => {
     e?.preventDefault();
     if (!url.trim()) return;
     setLoading(true);
     setErrorMsg('');
+    setToastMsg('');
     try {
       const data = await apiClient.inspect(url.trim());
       setInspectData(data);
@@ -27,8 +29,27 @@ export function InspectorView({ onDownloadStarted }) {
 
   const handleConfirmDownload = async (options) => {
     try {
-      await apiClient.startDownload(options);
-      if (onDownloadStarted) onDownloadStarted();
+      if (!options.in_vault) {
+        const params = new URLSearchParams({
+          url: options.url,
+          format_id: options.format_id || 'best',
+          is_audio: options.is_audio ? 'true' : 'false',
+          title: inspectData?.title || 'video',
+        });
+        const downloadUrl = `/api/downloads/stream-direct?${params.toString()}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.setAttribute('download', `${inspectData?.title || 'video'}.${options.is_audio ? 'mp3' : 'mp4'}`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setToastMsg('Streaming directly to your phone storage!');
+        setTimeout(() => setToastMsg(''), 5000);
+      } else {
+        await apiClient.startDownload(options);
+        if (onDownloadStarted) onDownloadStarted();
+      }
     } catch (err) {
       setErrorMsg(err.message || 'Failed to start download');
     }
@@ -70,6 +91,13 @@ export function InspectorView({ onDownloadStarted }) {
       {errorMsg && (
         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 text-xs text-center">
           {errorMsg}
+        </div>
+      )}
+
+      {toastMsg && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-xs text-center font-medium animate-fade-in flex items-center justify-center gap-2">
+          <Download size={15} className="text-emerald-600" />
+          <span>{toastMsg}</span>
         </div>
       )}
 

@@ -384,4 +384,19 @@ async def test_device_isolation_files():
         assert not any(item["file_id"] == "fa1" for item in items_b)
 
 
+async def test_stream_direct_download_endpoint():
+    async def mock_pipe(url, format_id="best", is_audio=False):
+        yield b"chunk-1"
+        yield b"chunk-2"
+
+    with patch("app.main.pipe_media_stream", side_effect=mock_pipe):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            res = await ac.get("/api/downloads/stream-direct?url=https://example.com/video&title=SampleVideo")
+            assert res.status_code == 200
+            assert "attachment; filename=\"SampleVideo.mp4\"" in res.headers["content-disposition"]
+            content = await res.aread()
+            assert content == b"chunk-1chunk-2"
+
+
+
 

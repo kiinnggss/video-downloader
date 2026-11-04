@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Film, Music, Shield, Check, X } from 'lucide-react';
+import { Film, Music, Shield, Check, X, Download } from 'lucide-react';
 
 export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
   const [selectedFormat, setSelectedFormat] = useState(
@@ -113,10 +113,25 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
         <button
           type="button"
           onClick={handleSubmit}
-          className="w-full py-4 rounded-full bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-semibold shadow-fab-glow transition-all"
+          className="w-full py-4 rounded-full bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-semibold shadow-fab-glow transition-all flex items-center justify-center gap-2"
         >
-          Start Download
+          {inVault ? (
+            <>
+              <Shield size={18} />
+              <span>Save to Private Vault</span>
+            </>
+          ) : (
+            <>
+              <Download size={18} />
+              <span>Download Straight to Phone</span>
+            </>
+          )}
         </button>
+        <p className="text-[11px] text-center text-slate-400 -mt-2">
+          {inVault 
+            ? 'Encrypts and stores securely inside your private vault.' 
+            : 'Streams directly into your phone storage with no waiting phase.'}
+        </p>
       </div>
     </div>
   );

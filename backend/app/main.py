@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
 from app.models import InspectRequest, InspectResponse, DownloadRequest, DownloadTask
@@ -15,6 +15,7 @@ from app.services.downloader import (
     pause_download,
     resume_download,
     cancel_download,
+    pipe_media_stream,
 )
 from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
@@ -86,6 +87,33 @@ def cancel_task(task_id: str):
     if not success:
         raise HTTPException(status_code=404, detail="Task not found or cannot be cancelled")
     return {"status": "cancelled", "task_id": task_id}
+
+
+@app.get("/api/downloads/stream-direct")
+async def stream_direct_download(
+    url: str,
+    format_id: str = "best",
+    is_audio: bool = False,
+    title: Optional[str] = None
+):
+    clean_title = "".join(c for c in (title or "media") if c.isalnum() or c in (" ", "-", "_")).strip() or "media"
+    ext = "mp3" if is_audio else "mp4"
+    filename = f"{clean_title}.{ext}"
+
+    async def stream_chunks():
+        async for chunk in pipe_media_stream(url, format_id=format_id, is_audio=is_audio):
+            yield chunk
+
+    media_type = "audio/mpeg" if is_audio else "video/mp4"
+    return StreamingResponse(
+        stream_chunks(),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache",
+        }
+    )
+
 
 
 @app.get("/api/downloads/stream")

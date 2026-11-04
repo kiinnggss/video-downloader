@@ -333,4 +333,79 @@ async def subscribe_telemetry(device_id: Optional[str] = None) -> AsyncGenerator
             if q in active_subscribers:
                 active_subscribers.remove(q)
 
+async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = False) -> AsyncGenerator[bytes, None]:
+    """Yields binary chunks of the media stream directly without storing on disk."""
+    import sys
+    import httpx
+
+    ydl_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "extractor_args": {"youtube": {"player_client": ["ios", "android", "mweb"]}},
+        "js_runtimes": {"node": {}},
+    }
+    direct_url = None
+    http_headers = None
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False) or {}
+            formats = info.get("formats") or []
+            target = None
+            if format_id and format_id != "best":
+                for f in formats:
+                    if str(f.get("format_id")) == str(format_id):
+                        target = f
+                        break
+            if not target and not is_audio:
+                for f in reversed(formats):
+                    if f.get("vcodec") != "none" and f.get("acodec") != "none" and f.get("url"):
+                        target = f
+                        break
+                if not target and info.get("url"):
+                    direct_url = info.get("url")
+                    http_headers = info.get("http_headers")
+            if target and not is_audio:
+                proto = target.get("protocol") or ""
+                if proto in ("http", "https") and target.get("vcodec") != "none" and target.get("acodec") != "none":
+                    direct_url = target.get("url")
+                    http_headers = target.get("http_headers")
+    except Exception:
+        pass
+
+    if direct_url and not is_audio:
+        headers = http_headers or {"User-Agent": "Mozilla/5.0"}
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=60.0) as client:
+            async with client.stream("GET", direct_url) as resp:
+                async for chunk in resp.aiter_bytes(chunk_size=65536):
+                    yield chunk
+    else:
+        cmd = [
+            sys.executable, "-m", "yt_dlp",
+            "--quiet", "--no-warnings",
+            "--extractor-args", "youtube:player_client=ios,android,mweb",
+            "-o", "-",
+        ]
+        if is_audio:
+            cmd.extend(["-f", "bestaudio/best", "-x", "--audio-format", "mp3"])
+        elif format_id and format_id != "best":
+            cmd.extend(["-f", f"{format_id}+bestaudio/best/{format_id}/b/best"])
+        else:
+            cmd.extend(["-f", "b/best"])
+        cmd.append(url)
+
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=65536)
+        try:
+            while True:
+                chunk = await asyncio.to_thread(proc.stdout.read, 65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+
+
 get_telemetry_stream = subscribe_telemetry
