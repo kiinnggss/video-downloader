@@ -19,6 +19,7 @@ from app.services.downloader import (
 )
 from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
+from app.services.cookies import save_cookie_content, clear_cookies, has_cookies
 from app.db import init_db, list_media_files, get_media_file
 
 @asynccontextmanager
@@ -44,9 +45,10 @@ def healthz():
 
 
 @app.post("/api/inspect", response_model=InspectResponse)
-def inspect_url(req: InspectRequest):
+def inspect_url(req: InspectRequest, x_device_id: Optional[str] = Header(None, alias="X-Device-Id")):
     try:
-        return extract_video_info(req.url)
+        device_id = req.device_id or x_device_id
+        return extract_video_info(req.url, device_id=device_id)
     except Exception as e:
         err_msg = str(e)
         if "drm" in err_msg.lower() or "widevine" in err_msg.lower() or "encrypted" in err_msg.lower():
@@ -94,14 +96,17 @@ async def stream_direct_download(
     url: str,
     format_id: str = "best",
     is_audio: bool = False,
-    title: Optional[str] = None
+    title: Optional[str] = None,
+    device_id: Optional[str] = Query(None),
+    x_device_id: Optional[str] = Header(None, alias="X-Device-Id"),
 ):
+    target_device = device_id or x_device_id
     clean_title = "".join(c for c in (title or "media") if c.isalnum() or c in (" ", "-", "_")).strip() or "media"
     ext = "mp3" if is_audio else "mp4"
     filename = f"{clean_title}.{ext}"
 
     async def stream_chunks():
-        async for chunk in pipe_media_stream(url, format_id=format_id, is_audio=is_audio):
+        async for chunk in pipe_media_stream(url, format_id=format_id, is_audio=is_audio, device_id=target_device):
             yield chunk
 
     media_type = "audio/mpeg" if is_audio else "video/mp4"
@@ -113,6 +118,39 @@ async def stream_direct_download(
             "Cache-Control": "no-cache",
         }
     )
+
+
+@app.get("/api/settings/cookies")
+def get_cookies_status(
+    device_id: Optional[str] = Query(None),
+    x_device_id: Optional[str] = Header(None, alias="X-Device-Id"),
+):
+    target_device = device_id or x_device_id
+    return {"has_cookies": has_cookies(target_device)}
+
+
+@app.post("/api/settings/cookies")
+def save_cookies(
+    payload: dict,
+    device_id: Optional[str] = Query(None),
+    x_device_id: Optional[str] = Header(None, alias="X-Device-Id"),
+):
+    target_device = device_id or x_device_id
+    raw_cookies = payload.get("cookies", "") if isinstance(payload, dict) else ""
+    if not raw_cookies.strip():
+        raise HTTPException(status_code=400, detail="Cookie content cannot be empty")
+    save_cookie_content(raw_cookies, device_id=target_device)
+    return {"status": "saved", "has_cookies": True}
+
+
+@app.delete("/api/settings/cookies")
+def remove_cookies(
+    device_id: Optional[str] = Query(None),
+    x_device_id: Optional[str] = Header(None, alias="X-Device-Id"),
+):
+    target_device = device_id or x_device_id
+    cleared = clear_cookies(target_device)
+    return {"status": "cleared" if cleared else "not_found", "has_cookies": False}
 
 
 

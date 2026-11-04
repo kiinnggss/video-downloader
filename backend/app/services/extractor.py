@@ -129,8 +129,12 @@ def parse_raw_info(info: Dict[str, Any]) -> InspectResponse:
         formats=formats
     )
 
-def extract_video_info(url: str) -> InspectResponse:
+def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResponse:
+    from app.services.cookies import get_cookie_path
+
     target_url = resolve_redirects(url)
+    cookie_file = get_cookie_path(device_id)
+
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
@@ -155,6 +159,15 @@ def extract_video_info(url: str) -> InspectResponse:
             }
         },
     }
+    if cookie_file:
+        ydl_opts["cookiefile"] = cookie_file
+
+    try:
+        from yt_dlp.networking.impersonate import ImpersonateTarget
+        ydl_opts["impersonate"] = ImpersonateTarget.from_str("chrome")
+    except Exception:
+        pass
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(target_url, download=False)
         return parse_raw_info(info)

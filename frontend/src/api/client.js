@@ -14,18 +14,56 @@ export function getDeviceId() {
 
 export const apiClient = {
   async inspect(url) {
+    const deviceId = getDeviceId();
     const res = await fetch('/api/inspect', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': getDeviceId(),
+        'X-Device-Id': deviceId,
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, device_id: deviceId }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Inspection failed');
     }
+    return res.json();
+  },
+
+  async getCookieStatus() {
+    const res = await fetch('/api/settings/cookies', {
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
+    if (!res.ok) return { has_cookies: false };
+    return res.json();
+  },
+
+  async saveCookies(cookies) {
+    const res = await fetch('/api/settings/cookies', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': getDeviceId(),
+      },
+      body: JSON.stringify({ cookies }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to save cookies');
+    }
+    return res.json();
+  },
+
+  async clearCookies() {
+    const res = await fetch('/api/settings/cookies', {
+      method: 'DELETE',
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to clear cookies');
     return res.json();
   },
 

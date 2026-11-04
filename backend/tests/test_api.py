@@ -385,7 +385,7 @@ async def test_device_isolation_files():
 
 
 async def test_stream_direct_download_endpoint():
-    async def mock_pipe(url, format_id="best", is_audio=False):
+    async def mock_pipe(url, format_id="best", is_audio=False, device_id=None):
         yield b"chunk-1"
         yield b"chunk-2"
 
@@ -396,6 +396,39 @@ async def test_stream_direct_download_endpoint():
             assert "attachment; filename=\"SampleVideo.mp4\"" in res.headers["content-disposition"]
             content = await res.aread()
             assert content == b"chunk-1chunk-2"
+
+
+async def test_cookie_management_endpoints():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        device_id = "test-device-cookies-1"
+        headers = {"X-Device-Id": device_id}
+
+        # 1. Initial status - no cookies
+        res = await ac.get("/api/settings/cookies", headers=headers)
+        assert res.status_code == 200
+        assert res.json() == {"has_cookies": False}
+
+        # 2. Save cookies
+        cookie_text = "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tSID\tsample_session\n"
+        res = await ac.post("/api/settings/cookies", json={"cookies": cookie_text}, headers=headers)
+        assert res.status_code == 200
+        assert res.json()["has_cookies"] is True
+
+        # 3. Status check after save
+        res = await ac.get("/api/settings/cookies", headers=headers)
+        assert res.status_code == 200
+        assert res.json()["has_cookies"] is True
+
+        # 4. Delete cookies
+        res = await ac.delete("/api/settings/cookies", headers=headers)
+        assert res.status_code == 200
+        assert res.json()["has_cookies"] is False
+
+        # 5. Status check after delete
+        res = await ac.get("/api/settings/cookies", headers=headers)
+        assert res.status_code == 200
+        assert res.json()["has_cookies"] is False
+
 
 
 

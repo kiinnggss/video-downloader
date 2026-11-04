@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Search, X, Download, Compass, Loader2 } from 'lucide-react';
-import { apiClient } from '../api/client';
+import { Search, X, Download, Compass, Loader2, Key } from 'lucide-react';
+import { apiClient, getDeviceId } from '../api/client';
 import { FormatPickerModal } from './FormatPickerModal';
+import { CookieSettingsModal } from './CookieSettingsModal';
 
 export function InspectorView({ onDownloadStarted }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [inspectData, setInspectData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCookieModalOpen, setIsCookieModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [toastMsg, setToastMsg] = useState('');
 
@@ -35,6 +37,7 @@ export function InspectorView({ onDownloadStarted }) {
           format_id: options.format_id || 'best',
           is_audio: options.is_audio ? 'true' : 'false',
           title: inspectData?.title || 'video',
+          device_id: getDeviceId(),
         });
         const downloadUrl = `/api/downloads/stream-direct?${params.toString()}`;
         const link = document.createElement('a');
@@ -57,6 +60,23 @@ export function InspectorView({ onDownloadStarted }) {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-md mx-auto px-4 pt-4 pb-28">
+      {/* Top Header */}
+      <div className="flex items-center justify-between w-full px-1">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Crystal</h1>
+          <p className="text-[11px] text-slate-500">Universal mobile media downloader</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCookieModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full crystal-card text-xs font-medium text-slate-700 hover:text-slate-900 transition-all border border-white/40 shadow-sm"
+          title="Account and Cookie Settings"
+        >
+          <Key size={14} className="text-amber-500" />
+          <span>Login / Cookies</span>
+        </button>
+      </div>
+
       {/* Search / Address Pill */}
       <form onSubmit={handleInspect} className="relative w-full">
         <div className="flex items-center w-full crystal-card rounded-full px-4 py-2.5 shadow-sm">
@@ -156,6 +176,12 @@ export function InspectorView({ onDownloadStarted }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmDownload}
+      />
+
+      {/* Cookie / Session Settings Modal */}
+      <CookieSettingsModal
+        isOpen={isCookieModalOpen}
+        onClose={() => setIsCookieModalOpen(false)}
       />
     </div>
   );

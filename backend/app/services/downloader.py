@@ -204,6 +204,10 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
 
         broadcast_telemetry(task.model_dump())
 
+    from app.services.cookies import get_cookie_path
+
+    cookie_file = get_cookie_path(req.device_id)
+
     ydl_opts = {
         "outtmpl": outtmpl,
         "progress_hooks": [progress_hook],
@@ -227,6 +231,15 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             }
         },
     }
+    if cookie_file:
+        ydl_opts["cookiefile"] = cookie_file
+
+    try:
+        from yt_dlp.networking.impersonate import ImpersonateTarget
+        ydl_opts["impersonate"] = ImpersonateTarget.from_str("chrome")
+    except Exception:
+        pass
+
     if req.is_audio:
         ydl_opts["format"] = "bestaudio/best"
         ydl_opts["postprocessors"] = [{
@@ -235,7 +248,7 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             "preferredquality": "192",
         }]
     else:
-        ydl_opts["format"] = f"{req.format_id}+bestaudio/best" if req.format_id != "best" else "best"
+        ydl_opts["format"] = f"{req.format_id}+bestaudio/best/{req.format_id}/b/best" if req.format_id != "best" else "b/best"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -352,17 +365,35 @@ async def subscribe_telemetry(device_id: Optional[str] = None) -> AsyncGenerator
             if q in active_subscribers:
                 active_subscribers.remove(q)
 
-async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = False) -> AsyncGenerator[bytes, None]:
-    """Yields binary chunks of the media stream directly without storing on disk."""
+async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = False, device_id: Optional[str] = None) -> AsyncGenerator[bytes, None]:
+    """Yields binary chunks of the media stream directly, verifying binary integrity."""
     import sys
     import httpx
+    import tempfile
+    from app.services.cookies import get_cookie_path
+
+    cookie_file = get_cookie_path(device_id)
 
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
-        "extractor_args": {"youtube": {"player_client": ["ios", "android", "mweb"]}},
+        "format": "all",
+        "extractor_args": {
+            "youtube": {"player_client": ["ios", "android", "mweb", "web"]},
+            "twitter": {"api": ["syndication", "graphql"]},
+            "tiktok": {"api": ["app", "web"]},
+        },
         "js_runtimes": {"node": {}},
     }
+    if cookie_file:
+        ydl_opts["cookiefile"] = cookie_file
+
+    try:
+        from yt_dlp.networking.impersonate import ImpersonateTarget
+        ydl_opts["impersonate"] = ImpersonateTarget.from_str("chrome")
+    except Exception:
+        pass
+
     direct_url = None
     http_headers = None
 
@@ -392,38 +423,78 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
     except Exception:
         pass
 
+    # Try streaming direct URL only if verified 200 OK and not HTML text error
+    direct_stream_succeeded = False
     if direct_url and not is_audio:
-        headers = http_headers or {"User-Agent": "Mozilla/5.0"}
-        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=60.0) as client:
-            async with client.stream("GET", direct_url) as resp:
-                async for chunk in resp.aiter_bytes(chunk_size=65536):
-                    yield chunk
-    else:
-        cmd = [
-            sys.executable, "-m", "yt_dlp",
-            "--quiet", "--no-warnings",
-            "--extractor-args", "youtube:player_client=ios,android,mweb",
-            "-o", "-",
-        ]
-        if is_audio:
-            cmd.extend(["-f", "bestaudio/best", "-x", "--audio-format", "mp3"])
-        elif format_id and format_id != "best":
-            cmd.extend(["-f", f"{format_id}+bestaudio/best/{format_id}/b/best"])
-        else:
-            cmd.extend(["-f", "b/best"])
-        cmd.append(url)
-
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=65536)
+        headers = http_headers or {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
         try:
-            while True:
-                chunk = await asyncio.to_thread(proc.stdout.read, 65536)
-                if not chunk:
-                    break
-                yield chunk
-        finally:
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=60.0) as client:
+                async with client.stream("GET", direct_url) as resp:
+                    ctype = resp.headers.get("content-type", "").lower()
+                    if resp.status_code == 200 and not ctype.startswith("text/"):
+                        direct_stream_succeeded = True
+                        async for chunk in resp.aiter_bytes(chunk_size=65536):
+                            yield chunk
+                        return
+        except Exception:
+            pass
+
+    # If direct stream is unavailable or failed validation, download to temporary verified container
+    ext = "mp3" if is_audio else "mp4"
+    with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as tmp:
+        temp_file_path = Path(tmp.name)
+
+    try:
+        download_opts = {
+            "outtmpl": str(temp_file_path),
+            "quiet": True,
+            "no_warnings": True,
+            "extractor_args": {
+                "youtube": {"player_client": ["ios", "android", "mweb", "web"]},
+                "twitter": {"api": ["syndication", "graphql"]},
+                "tiktok": {"api": ["app", "web"]},
+            },
+            "js_runtimes": {"node": {}},
+        }
+        if cookie_file:
+            download_opts["cookiefile"] = cookie_file
+        try:
+            from yt_dlp.networking.impersonate import ImpersonateTarget
+            download_opts["impersonate"] = ImpersonateTarget.from_str("chrome")
+        except Exception:
+            pass
+
+        if is_audio:
+            download_opts["format"] = "bestaudio/best"
+            download_opts["postprocessors"] = [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }]
+        else:
+            download_opts["format"] = f"{format_id}+bestaudio/best/{format_id}/b/best" if format_id != "best" else "b/best"
+
+        def run_dl():
+            with yt_dlp.YoutubeDL(download_opts) as ydl:
+                ydl.download([url])
+
+        await asyncio.to_thread(run_dl)
+
+        # Stream verified file
+        if temp_file_path.exists() and temp_file_path.stat().st_size > 0:
+            with open(temp_file_path, "rb") as f:
+                while True:
+                    chunk = await asyncio.to_thread(f.read, 65536)
+                    if not chunk:
+                        break
+                    yield chunk
+    finally:
+        if temp_file_path.exists():
             try:
-                proc.kill()
-            except Exception:
+                temp_file_path.unlink()
+            except OSError:
                 pass
 
 

@@ -10,6 +10,7 @@ class FormatOption(BaseModel):
 
 class InspectRequest(BaseModel):
     url: str
+    device_id: Optional[str] = None
 
 class InspectResponse(BaseModel):
     url: str
