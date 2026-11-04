@@ -91,11 +91,32 @@ def test_extract_video_info():
             "no_warnings": True,
             "skip_download": True,
             "noplaylist": True,
+            "format": "all",
             "js_runtimes": {"node": {}},
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-us,en;q=0.5",
+            },
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["ios", "android", "mweb"]
+                    "player_client": ["ios", "android", "mweb", "web"]
+                },
+                "twitter": {
+                    "api": ["syndication", "graphql"]
+                },
+                "tiktok": {
+                    "api": ["app", "web"]
                 }
             },
         })
         mock_ydl.extract_info.assert_called_once_with("https://example.com/watch?v=123", download=False)
+
+
+def test_probe_format_size_estimation():
+    from app.services.extractor import probe_format_size
+    vf = {"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "height": 720, "tbr": 2000}
+    size = probe_format_size(vf, duration=60)
+    assert size is not None
+    assert size == int((2000 * 1000 / 8) * 60)
+

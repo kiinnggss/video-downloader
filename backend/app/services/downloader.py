@@ -168,12 +168,20 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         status = d.get("status") or "downloading"
         downloaded = int(d.get("downloaded_bytes") or 0)
         total = int(d.get("total_bytes") or d.get("total_bytes_estimate") or 0)
+        info_dict = d.get("info_dict") or {}
+        if total <= 0 and info_dict:
+            dur = int(info_dict.get("duration") or 0)
+            tbr = info_dict.get("tbr") or (info_dict.get("vbr") or 0) + (info_dict.get("abr") or 0)
+            if tbr and dur > 0:
+                total = int((tbr * 1000 / 8) * dur)
+            elif dur > 0:
+                total = int((2000 * 1000 / 8) * dur)
+
         speed_raw = d.get("speed", 0) or 0
         speed_str = format_speed(speed_raw)
         eta = d.get("eta")
         progress = calculate_progress(downloaded, total)
 
-        info_dict = d.get("info_dict") or {}
         task = DownloadTask(
             task_id=task_id,
             url=req.url,
@@ -202,9 +210,20 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         "quiet": True,
         "no_warnings": True,
         "js_runtimes": {"node": {}},
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-us,en;q=0.5",
+        },
         "extractor_args": {
             "youtube": {
-                "player_client": ["ios", "android", "mweb"]
+                "player_client": ["ios", "android", "mweb", "web"]
+            },
+            "twitter": {
+                "api": ["syndication", "graphql"]
+            },
+            "tiktok": {
+                "api": ["app", "web"]
             }
         },
     }

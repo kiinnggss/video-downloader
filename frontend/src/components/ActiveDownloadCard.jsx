@@ -10,8 +10,10 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
 
   const isPaused = task.status === 'paused';
   const isCancelled = task.status === 'cancelled';
-  const downloadedMb = (task.downloaded_bytes / (1024 * 1024)).toFixed(2);
-  const totalMb = (task.total_bytes / (1024 * 1024)).toFixed(2);
+  const downloadedMb = ((task.downloaded_bytes || 0) / (1024 * 1024)).toFixed(2);
+  const totalMb = task.total_bytes && task.total_bytes > 0
+    ? (task.total_bytes / (1024 * 1024)).toFixed(2)
+    : null;
 
   const handleTogglePause = async () => {
     if (loadingAction || !task.task_id) return;
@@ -125,7 +127,7 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-        <span>{downloadedMb} MB / {totalMb} MB</span>
+        <span>{downloadedMb} MB{totalMb ? ` / ${totalMb} MB` : ''}</span>
         {task.eta_seconds && !isPaused ? <span>ETA: {task.eta_seconds}s</span> : null}
       </div>
 
