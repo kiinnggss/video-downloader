@@ -123,14 +123,14 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
           ) : (
             <>
               <Download size={18} strokeWidth={2.5} />
-              <span>Download Straight to Phone</span>
+              <span>Start High-Speed Download</span>
             </>
           )}
         </button>
         <p className="text-[11px] text-center text-slate-400 -mt-2">
           {inVault 
             ? 'Encrypts and stores securely inside your private vault.' 
-            : 'Streams directly into your phone storage with high-speed multi-threading.'}
+            : '8-worker multi-threaded download with live progress and auto-save.'}
         </p>
       </div>
     </div>

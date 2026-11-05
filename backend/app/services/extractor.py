@@ -9,35 +9,50 @@ def probe_format_size(vf: Dict[str, Any], duration: int = 0) -> Optional[int]:
     if size and int(size) > 0:
         return int(size)
 
-    stream_url = vf.get("url")
-    if stream_url and str(stream_url).startswith("http"):
+    stream_url = str(vf.get("url") or "")
+    proto = str(vf.get("protocol") or "").lower()
+    is_hls = ".m3u8" in stream_url.lower() or "m3u8" in proto
+
+    # For HLS streams, HEAD requests return the size of the playlist text file.
+    # Compute size from the manifest bitrate and video duration instead.
+    if is_hls and duration and duration > 0:
+        tbr = vf.get("tbr") or (vf.get("vbr") or 0) + (vf.get("abr") or 0)
+        if tbr and float(tbr) > 0:
+            return int((float(tbr) * 1000 / 8) * duration)
+        height = vf.get("height") or 720
+        bitrate_kbps = 3500 if height >= 1080 else (1800 if height >= 720 else (1000 if height >= 480 else (650 if height >= 360 else 450)))
+        return int((bitrate_kbps * 1000 / 8) * duration)
+
+    if stream_url.startswith("http") and not is_hls:
         headers = vf.get("http_headers") or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
         try:
             with httpx.Client(timeout=2.0, follow_redirects=True, headers=headers) as client:
                 resp = client.head(stream_url)
-                cl = resp.headers.get("content-length")
-                if cl and cl.isdigit() and int(cl) > 0:
-                    return int(cl)
-                range_resp = client.get(stream_url, headers={"Range": "bytes=0-0"})
-                cr = range_resp.headers.get("content-range")
-                if cr and "/" in cr:
-                    total_str = cr.split("/")[-1].strip()
-                    if total_str.isdigit() and int(total_str) > 0:
-                        return int(total_str)
+                ctype = resp.headers.get("content-type", "").lower()
+                if "mpegurl" not in ctype and not ctype.startswith("text/"):
+                    cl = resp.headers.get("content-length")
+                    if cl and cl.isdigit() and int(cl) > 0:
+                        return int(cl)
+                    range_resp = client.get(stream_url, headers={"Range": "bytes=0-0"})
+                    cr = range_resp.headers.get("content-range")
+                    if cr and "/" in cr:
+                        total_str = cr.split("/")[-1].strip()
+                        if total_str.isdigit() and int(total_str) > 0:
+                            return int(total_str)
         except Exception:
             pass
 
     tbr = vf.get("tbr") or (vf.get("vbr") or 0) + (vf.get("abr") or 0)
     if tbr and duration and duration > 0:
-        calculated = int((tbr * 1000 / 8) * duration)
+        calculated = int((float(tbr) * 1000 / 8) * duration)
         if calculated > 0:
             return calculated
 
     height = vf.get("height") or 720
     if duration and duration > 0:
-        bitrate_kbps = 3500 if height >= 1080 else (2000 if height >= 720 else (1000 if height >= 480 else 600))
+        bitrate_kbps = 3500 if height >= 1080 else (1800 if height >= 720 else (1000 if height >= 480 else (650 if height >= 360 else 450)))
         return int((bitrate_kbps * 1000 / 8) * duration)
 
     return None

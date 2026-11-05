@@ -9,6 +9,10 @@ import yt_dlp
 from app.models import DownloadRequest, DownloadTask, MediaFile
 from app.db import save_task, save_media_file, get_task
 from app.config import PUBLIC_STORAGE, VAULT_STORAGE, DB_PATH
+from app.services.cookies import get_cookie_path
+from app.services.patches import apply_extractor_patches, discover_media_from_page
+
+apply_extractor_patches()
 
 active_subscribers = []
 lock = threading.Lock()
@@ -392,8 +396,8 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
     import sys
     import httpx
     import tempfile
-    from app.services.cookies import get_cookie_path
 
+    apply_extractor_patches()
     cookie_file = get_cookie_path(device_id)
 
     ydl_opts = {
