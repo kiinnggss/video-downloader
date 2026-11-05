@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InspectorView } from './components/InspectorView';
 import { DownloadsView } from './components/DownloadsView';
 import { FilesView } from './components/FilesView';
@@ -6,12 +6,46 @@ import { VaultView } from './components/VaultView';
 import { BottomNav } from './components/BottomNav';
 import { MiniDownloadBanner } from './components/MiniDownloadBanner';
 import { useTelemetry } from './api/telemetry';
+import { apiClient } from './api/client';
 
 export default function App() {
   const [tab, setTab] = useState('home');
   const { activeTask } = useTelemetry();
 
-  const isDownloading = activeTask && (activeTask.status === 'downloading' || activeTask.status === 'paused' || activeTask.status === 'queued');
+  const isDownloading = Boolean(
+    activeTask && (activeTask.status === 'downloading' || activeTask.status === 'paused' || activeTask.status === 'queued')
+  );
+
+  // Keep-alive heartbeat: ping every 25 seconds to prevent serverless container from sleeping
+  useEffect(() => {
+    apiClient.pingKeepAlive();
+    const interval = setInterval(() => {
+      apiClient.pingKeepAlive();
+    }, 25000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Screen Wake Lock: keep mobile screen awake while downloading
+  useEffect(() => {
+    let wakeLock = null;
+    const acquireLock = async () => {
+      if (isDownloading && typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch {
+          // May be rejected if tab is backgrounded
+        }
+      }
+    };
+    acquireLock();
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release().catch(() => {});
+        wakeLock = null;
+      }
+    };
+  }, [isDownloading]);
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${

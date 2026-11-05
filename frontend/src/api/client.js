@@ -162,5 +162,14 @@ export const apiClient = {
     });
     if (!res.ok) throw new Error('Vault locked');
     return res.json();
+  },
+
+  async pingKeepAlive() {
+    try {
+      const res = await fetch('/api/keepalive');
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 };

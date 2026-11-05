@@ -430,6 +430,16 @@ async def test_cookie_management_endpoints():
         assert res.json()["has_cookies"] is False
 
 
+async def test_keep_alive_endpoint():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.get("/api/keepalive")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "alive"
+        assert "timestamp" in data
+
+
+
 
 
 

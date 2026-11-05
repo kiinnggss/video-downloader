@@ -213,6 +213,11 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         "progress_hooks": [progress_hook],
         "quiet": True,
         "no_warnings": True,
+        "concurrent_fragment_downloads": 8,
+        "buffersize": 1048576,
+        "http_chunk_size": 10485760,
+        "retries": 10,
+        "fragment_retries": 10,
         "js_runtimes": {"node": {}},
         "http_headers": {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -431,7 +436,7 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
                     ctype = resp.headers.get("content-type", "").lower()
                     if resp.status_code == 200 and not ctype.startswith("text/"):
                         direct_stream_succeeded = True
-                        async for chunk in resp.aiter_bytes(chunk_size=65536):
+                        async for chunk in resp.aiter_bytes(chunk_size=131072):
                             yield chunk
                         return
         except Exception:
@@ -447,6 +452,11 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
             "outtmpl": str(temp_file_path),
             "quiet": True,
             "no_warnings": True,
+            "concurrent_fragment_downloads": 8,
+            "buffersize": 1048576,
+            "http_chunk_size": 10485760,
+            "retries": 10,
+            "fragment_retries": 10,
             "extractor_args": {
                 "youtube": {"player_client": ["ios", "android", "mweb", "web"]},
                 "tiktok": {"api": ["app", "web"]},
@@ -481,7 +491,7 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
         if temp_file_path.exists() and temp_file_path.stat().st_size > 0:
             with open(temp_file_path, "rb") as f:
                 while True:
-                    chunk = await asyncio.to_thread(f.read, 65536)
+                    chunk = await asyncio.to_thread(f.read, 131072)
                     if not chunk:
                         break
                     yield chunk

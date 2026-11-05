@@ -44,6 +44,12 @@ def healthz():
     return {"status": "ok", "build": "v2-bot-fix"}
 
 
+@app.get("/api/keepalive")
+def keep_alive():
+    import time
+    return {"status": "alive", "timestamp": int(time.time())}
+
+
 @app.post("/api/inspect", response_model=InspectResponse)
 def inspect_url(req: InspectRequest, x_device_id: Optional[str] = Header(None, alias="X-Device-Id")):
     try:
