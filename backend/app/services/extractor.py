@@ -131,6 +131,9 @@ def parse_raw_info(info: Dict[str, Any]) -> InspectResponse:
 
 def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResponse:
     from app.services.cookies import get_cookie_path
+    from app.services.patches import apply_extractor_patches, discover_media_from_page
+
+    apply_extractor_patches()
 
     target_url = resolve_redirects(url)
     cookie_file = get_cookie_path(device_id)
@@ -165,6 +168,29 @@ def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResp
     except Exception:
         pass
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(target_url, download=False)
-        return parse_raw_info(info)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(target_url, download=False)
+            return parse_raw_info(info)
+    except Exception as primary_err:
+        discovered = discover_media_from_page(target_url)
+        if discovered and discovered.get("stream_url"):
+            stream_url = discovered["stream_url"]
+            stream_opts = dict(ydl_opts)
+            stream_opts["http_headers"] = discovered.get("headers", ydl_opts["http_headers"])
+            try:
+                with yt_dlp.YoutubeDL(stream_opts) as ydl_stream:
+                    info = ydl_stream.extract_info(stream_url, download=False)
+                    if info:
+                        if not info.get("title") or info.get("title") == "master":
+                            info["title"] = discovered.get("title") or info.get("title")
+                        if not info.get("thumbnail"):
+                            info["thumbnail"] = discovered.get("thumbnail") or ""
+                        if not info.get("duration") and discovered.get("duration"):
+                            info["duration"] = discovered["duration"]
+                        if not info.get("webpage_url"):
+                            info["webpage_url"] = target_url
+                        return parse_raw_info(info)
+            except Exception:
+                pass
+        raise primary_err

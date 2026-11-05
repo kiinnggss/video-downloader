@@ -20,11 +20,13 @@ from app.services.downloader import (
 from app.services.storage import stream_file_range
 from app.services.vault import verify_pin, generate_vault_token, verify_vault_token
 from app.services.cookies import save_cookie_content, clear_cookies, has_cookies
+from app.services.patches import apply_extractor_patches
 from app.db import init_db, list_media_files, get_media_file
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    apply_extractor_patches()
     yield
 
 

@@ -205,6 +205,9 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         broadcast_telemetry(task.model_dump())
 
     from app.services.cookies import get_cookie_path
+    from app.services.patches import apply_extractor_patches, discover_media_from_page
+
+    apply_extractor_patches()
 
     cookie_file = get_cookie_path(req.device_id)
 
@@ -253,50 +256,67 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         ydl_opts["format"] = f"{req.format_id}+bestaudio/best/{req.format_id}/b/best" if req.format_id != "best" else "b/best"
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(req.url, download=True) or {}
-            filename = ydl.prepare_filename(info)
-            if req.is_audio:
-                filename = str(filename).rsplit(".", 1)[0] + ".mp3"
-            
-            filepath_str = str(filename)
-            filesize = int(info.get("filesize") or 0)
-            if not filesize and os.path.exists(filepath_str):
-                try:
-                    filesize = os.path.getsize(filepath_str)
-                except OSError:
-                    filesize = 0
+        info = None
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(req.url, download=True) or {}
+                filename = ydl.prepare_filename(info)
+        except Exception as dl_err:
+            discovered = discover_media_from_page(req.url)
+            if discovered and discovered.get("stream_url"):
+                stream_url = discovered["stream_url"]
+                ydl_opts["http_headers"] = discovered.get("headers", ydl_opts.get("http_headers", {}))
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(stream_url, download=True) or {}
+                    filename = ydl.prepare_filename(info)
+                    if not info.get("title") or info.get("title") == "master":
+                        info["title"] = discovered.get("title") or "Downloaded Video"
+                    if not info.get("thumbnail"):
+                        info["thumbnail"] = discovered.get("thumbnail")
+            else:
+                raise dl_err
 
-            media = MediaFile(
-                file_id=str(uuid.uuid4()),
-                title=info.get("title", "Downloaded Video"),
-                filename=Path(filename).name,
-                filepath=filepath_str,
-                category="music" if req.is_audio else "video",
-                filesize=filesize,
-                duration=int(info.get("duration") or 0),
-                thumbnail=info.get("thumbnail"),
-                in_vault=req.in_vault,
-                device_id=req.device_id,
-            )
-            save_media_file(media, db_path=db_path)
-            
-            completed_task = DownloadTask(
-                task_id=task_id,
-                url=req.url,
-                title=info.get("title", "Completed"),
-                status="finished",
-                progress=100.0,
-                speed="0 Mb/s",
-                downloaded_bytes=media.filesize,
-                total_bytes=media.filesize,
-                in_vault=req.in_vault,
-                file_id=media.file_id,
-                filename=media.filename,
-                device_id=req.device_id,
-            )
-            save_task(completed_task, db_path=db_path)
-            broadcast_telemetry(completed_task.model_dump())
+        if req.is_audio:
+            filename = str(filename).rsplit(".", 1)[0] + ".mp3"
+        
+        filepath_str = str(filename)
+        filesize = int(info.get("filesize") or 0)
+        if not filesize and os.path.exists(filepath_str):
+            try:
+                filesize = os.path.getsize(filepath_str)
+            except OSError:
+                filesize = 0
+
+        media = MediaFile(
+            file_id=str(uuid.uuid4()),
+            title=info.get("title", "Downloaded Video"),
+            filename=Path(filename).name,
+            filepath=filepath_str,
+            category="music" if req.is_audio else "video",
+            filesize=filesize,
+            duration=int(info.get("duration") or 0),
+            thumbnail=info.get("thumbnail"),
+            in_vault=req.in_vault,
+            device_id=req.device_id,
+        )
+        save_media_file(media, db_path=db_path)
+        
+        completed_task = DownloadTask(
+            task_id=task_id,
+            url=req.url,
+            title=info.get("title", "Completed"),
+            status="finished",
+            progress=100.0,
+            speed="0 Mb/s",
+            downloaded_bytes=media.filesize,
+            total_bytes=media.filesize,
+            in_vault=req.in_vault,
+            file_id=media.file_id,
+            filename=media.filename,
+            device_id=req.device_id,
+        )
+        save_task(completed_task, db_path=db_path)
+        broadcast_telemetry(completed_task.model_dump())
     except DownloadCancelledException:
         cancelled_task = DownloadTask(
             task_id=task_id,
@@ -482,8 +502,18 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
             download_opts["format"] = f"{format_id}+bestaudio/best/{format_id}/b/best" if format_id != "best" else "b/best"
 
         def run_dl():
-            with yt_dlp.YoutubeDL(download_opts) as ydl:
-                ydl.download([url])
+            try:
+                with yt_dlp.YoutubeDL(download_opts) as ydl:
+                    ydl.download([url])
+            except Exception as dl_err:
+                discovered = discover_media_from_page(url)
+                if discovered and discovered.get("stream_url"):
+                    stream_url = discovered["stream_url"]
+                    download_opts["http_headers"] = discovered.get("headers", download_opts.get("http_headers", {}))
+                    with yt_dlp.YoutubeDL(download_opts) as ydl:
+                        ydl.download([stream_url])
+                else:
+                    raise dl_err
 
         await asyncio.to_thread(run_dl)
 

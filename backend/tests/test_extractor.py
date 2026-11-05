@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from app.services.extractor import parse_raw_info, extract_video_info
 
 def test_parse_raw_info():
@@ -100,4 +100,85 @@ def test_probe_format_size_estimation():
     size = probe_format_size(vf, duration=60)
     assert size is not None
     assert size == int((2000 * 1000 / 8) * 60)
+
+
+def test_is_ad_or_tracker_url():
+    from app.services.patches import is_ad_or_tracker_url
+    assert is_ad_or_tracker_url("https://a.adtng.com/get/10016846") is True
+    assert is_ad_or_tracker_url("https://googleads.g.doubleclick.net/pagead/ads") is True
+    assert is_ad_or_tracker_url("https://example.com/subtitles.vtt") is True
+    assert is_ad_or_tracker_url("https://example.com/banner.jpg") is True
+    assert is_ad_or_tracker_url("https://cdn.example.com/video/master.m3u8") is False
+    assert is_ad_or_tracker_url("https://vs19.userscontent.net/video.mp4") is False
+
+
+def test_discover_media_from_page():
+    from app.services.patches import discover_media_from_page
+    from unittest.mock import MagicMock
+
+    mock_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Ad-Heavy Video Page - Watch Free</title>
+        <meta property="og:image" content="https://example.com/thumb.jpg" />
+        <meta property="video:duration" content="120" />
+    </head>
+    <body>
+        <script src="https://a.adtng.com/ads.js"></script>
+        <video id="player">
+            <source src="https://a.adtng.com/vast.xml" type="video/mp4" />
+            <source src="https://stream.example.com/media/playlist.m3u8" type="application/x-mpegURL" />
+        </video>
+    </body>
+    </html>
+    """
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = mock_html
+    mock_resp.url = "https://example.com/video/123"
+
+    with patch("httpx.Client.get", return_value=mock_resp):
+        res = discover_media_from_page("https://example.com/video/123")
+        assert res is not None
+        assert res["stream_url"] == "https://stream.example.com/media/playlist.m3u8"
+        assert res["title"] == "Ad-Heavy Video Page"
+        assert res["thumbnail"] == "https://example.com/thumb.jpg"
+        assert res["duration"] == 120
+        assert res["headers"]["Referer"] == "https://example.com/video/123"
+
+
+def test_extract_video_info_fallback_on_ad_page():
+    with patch("yt_dlp.YoutubeDL") as mock_ydl_cls, \
+         patch("app.services.patches.discover_media_from_page") as mock_discover:
+        
+        # Primary call fails with an extraction error
+        mock_instance = MagicMock()
+        mock_instance.extract_info.side_effect = [
+            Exception("ERROR: [PlayVids] f8HpS2VVD73: Unable to extract short video ID"),
+            {
+                "title": "Discovered Stream",
+                "duration": 180,
+                "thumbnail": "https://example.com/thumb.jpg",
+                "formats": [
+                    {"format_id": "720", "height": 720, "vcodec": "h264", "acodec": "aac", "ext": "mp4"}
+                ]
+            }
+        ]
+        mock_ydl_cls.return_value.__enter__.return_value = mock_instance
+
+        mock_discover.return_value = {
+            "stream_url": "https://stream.example.com/master.m3u8",
+            "title": "Discovered Fallback Video",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "duration": 180,
+            "headers": {"Referer": "https://example.com/watch"}
+        }
+
+        res = extract_video_info("https://example.com/watch")
+        assert res is not None
+        assert res.title == "Discovered Stream"
+        assert len(res.formats) == 1
+        assert res.formats[0].resolution == "720p"
+
 
