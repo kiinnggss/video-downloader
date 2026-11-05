@@ -66,15 +66,6 @@ export function InspectorView({ onDownloadStarted }) {
           <h1 className="text-xl font-bold tracking-tight text-slate-900">Crystal</h1>
           <p className="text-[11px] text-slate-500">Universal mobile media downloader</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCookieModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full crystal-card text-xs font-medium text-slate-700 hover:text-slate-900 transition-all border border-white/40 shadow-sm"
-          title="Account and Cookie Settings"
-        >
-          <Key size={14} className="text-amber-500" />
-          <span>Login / Cookies</span>
-        </button>
       </div>
 
       {/* Search / Address Pill */}
@@ -109,8 +100,17 @@ export function InspectorView({ onDownloadStarted }) {
       </form>
 
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 text-xs text-center">
-          {errorMsg}
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 text-xs text-center flex flex-col items-center gap-2">
+          <span>{errorMsg}</span>
+          {(errorMsg.toLowerCase().includes('sign in') || errorMsg.toLowerCase().includes('age') || errorMsg.toLowerCase().includes('restricted') || errorMsg.toLowerCase().includes('private') || errorMsg.toLowerCase().includes('bot')) && (
+            <button
+              type="button"
+              onClick={() => setIsCookieModalOpen(true)}
+              className="text-[11px] underline font-medium text-rose-800 hover:text-rose-950"
+            >
+              Sign-in required? Add session cookies
+            </button>
+          )}
         </div>
       )}
 
