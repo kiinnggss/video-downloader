@@ -28,20 +28,20 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md crystal-card rounded-t-3xl sm:rounded-3xl p-6 shadow-crystal flex flex-col gap-5 text-slate-800">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200/50">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="w-full max-w-md glass-cyber rounded-t-[32px] sm:rounded-[32px] p-6 shadow-2xl border border-cyan-500/30 flex flex-col gap-5 text-white">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div>
-            <h3 className="font-semibold text-lg text-slate-900">Select Quality</h3>
-            <p className="text-xs text-slate-500 truncate max-w-[260px]">{inspectData.title}</p>
+            <h3 className="font-extrabold text-lg text-white">Select Stream Quality</h3>
+            <p className="text-xs text-slate-400 truncate max-w-[260px]">{inspectData.title}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-200/50 text-slate-400"
+            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Close quality picker"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
@@ -60,27 +60,27 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
                 }}
                 className={`flex items-center justify-between p-3.5 rounded-2xl transition-all ${
                   isSelected 
-                    ? 'bg-amber-400/20 border border-amber-400/50 shadow-sm' 
-                    : 'bg-white/40 hover:bg-white/70 border border-white/40'
+                    ? 'bg-cyan-500/20 border border-cyan-400 text-white shadow-[0_0_15px_rgba(56,189,248,0.25)]' 
+                    : 'bg-black/30 hover:bg-black/50 border border-white/10 text-slate-300'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${isSelected ? 'bg-amber-400 text-slate-900' : 'bg-slate-100 text-slate-500'}`}>
+                  <div className={`p-2 rounded-xl border ${isSelected ? 'bg-cyan-500/30 text-cyan-300 border-cyan-400/40' : 'bg-white/5 text-slate-400 border-white/10'}`}>
                     {isFmtAudio ? <Music size={18} /> : <Film size={18} />}
                   </div>
                   <div className="text-left">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm text-slate-900">{fmt.resolution}</p>
+                      <p className="font-bold text-sm text-white">{fmt.resolution}</p>
                       {fmt.filesize_approx ? (
-                        <span className="text-[11px] font-mono text-slate-400">
+                        <span className="text-[11px] font-mono text-cyan-400/80">
                           ~{(fmt.filesize_approx / (1024 * 1024)).toFixed(1)} MB
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-xs text-slate-500">{fmt.note}</p>
+                    <p className="text-xs text-slate-400">{fmt.note}</p>
                   </div>
                 </div>
-                {isSelected && <Check size={18} className="text-amber-600 mr-2" />}
+                {isSelected && <Check size={18} className="text-cyan-400 mr-2 drop-shadow" />}
               </button>
             );
           })}
@@ -89,15 +89,15 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
         {/* Vault Destination Toggle */}
         <div 
           onClick={() => setInVault(!inVault)}
-          className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/5 hover:bg-slate-900/10 cursor-pointer transition-all border border-slate-900/5"
+          className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 hover:bg-black/60 cursor-pointer transition-all border border-white/10"
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${inVault ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'}`}>
+            <div className={`p-2 rounded-xl border ${inVault ? 'bg-cyan-500/30 text-cyan-300 border-cyan-400/40' : 'bg-white/5 text-slate-400 border-white/10'}`}>
               <Shield size={18} />
             </div>
             <div>
-              <p className="font-medium text-sm text-slate-900">Save to Private Vault</p>
-              <p className="text-xs text-slate-500">PIN-protected space</p>
+              <p className="font-bold text-sm text-white">Save to Private Vault</p>
+              <p className="text-xs text-slate-400">PIN-protected space</p>
             </div>
           </div>
           <input 
@@ -105,7 +105,7 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
             checked={inVault} 
             onChange={(e) => setInVault(e.target.checked)} 
             onClick={(e) => e.stopPropagation()}
-            className="w-5 h-5 rounded-md accent-slate-900" 
+            className="w-5 h-5 rounded-md accent-cyan-400 cursor-pointer" 
           />
         </div>
 
@@ -113,16 +113,16 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
         <button
           type="button"
           onClick={handleSubmit}
-          className="w-full py-4 rounded-full bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-semibold shadow-fab-glow transition-all flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:via-blue-400 hover:to-indigo-500 active:scale-[0.98] text-slate-950 font-extrabold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2"
         >
           {inVault ? (
             <>
-              <Shield size={18} />
+              <Shield size={18} strokeWidth={2.5} />
               <span>Save to Private Vault</span>
             </>
           ) : (
             <>
-              <Download size={18} />
+              <Download size={18} strokeWidth={2.5} />
               <span>Download Straight to Phone</span>
             </>
           )}
@@ -130,9 +130,11 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
         <p className="text-[11px] text-center text-slate-400 -mt-2">
           {inVault 
             ? 'Encrypts and stores securely inside your private vault.' 
-            : 'Streams directly into your phone storage with no waiting phase.'}
+            : 'Streams directly into your phone storage with high-speed multi-threading.'}
         </p>
       </div>
     </div>
   );
 }
+
+export default FormatPickerModal;

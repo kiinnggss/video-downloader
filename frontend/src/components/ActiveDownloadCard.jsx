@@ -49,13 +49,13 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
 
   if (isCancelled) {
     return (
-      <div className="crystal-card rounded-3xl p-4 border border-rose-300/40 animate-fade-in flex items-center justify-between">
+      <div className="glass-cyber rounded-3xl p-4 border border-rose-500/30 animate-fade-in flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-rose-400/20 text-rose-600">
+          <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400">
             <X size={18} />
           </div>
           <div>
-            <h4 className="font-semibold text-sm text-slate-800">Download Cancelled</h4>
+            <h4 className="font-bold text-sm text-white">Download Cancelled</h4>
             <span className="text-[11px] text-slate-400">{task.title}</span>
           </div>
         </div>
@@ -64,24 +64,24 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
   }
 
   return (
-    <div className={`crystal-card rounded-3xl p-4 shadow-crystal-glow transition-all duration-300 border ${
-      isPaused ? 'border-amber-300/60 bg-amber-50/30' : 'border-cyan-300/40 bg-white/70'
-    } animate-fade-in flex flex-col gap-3`}>
+    <div className={`glass-cyber rounded-3xl p-4.5 transition-all duration-300 border ${
+      isPaused ? 'border-amber-400/40 bg-amber-950/20' : 'border-cyan-400/40 shadow-cyber-card'
+    } animate-fade-in flex flex-col gap-3.5`}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 truncate pr-2">
-          <div className={`p-2 rounded-xl flex-shrink-0 transition-colors ${
-            isPaused ? 'bg-amber-400/20 text-amber-600' : 'bg-cyan-400/20 text-cyan-600'
+        <div className="flex items-center gap-3 truncate pr-2">
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors border ${
+            isPaused ? 'bg-amber-500/20 text-amber-400 border-amber-400/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30 shadow-inner'
           }`}>
-            <Zap size={18} />
+            <Zap size={18} className="drop-shadow-sm" />
           </div>
           <div className="truncate">
-            <h4 className="font-semibold text-sm text-slate-900 truncate">{task.title}</h4>
-            <div className="flex items-center gap-2">
-              <span className={`text-[11px] font-mono font-medium ${isPaused ? 'text-amber-600' : 'text-cyan-600'}`}>
+            <h4 className="font-bold text-sm text-white truncate">{task.title}</h4>
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`font-mono font-semibold ${isPaused ? 'text-amber-400' : 'text-cyan-400'}`}>
                 {isPaused ? 'Paused' : task.speed}
               </span>
-              <span className="text-[11px] text-slate-400">•</span>
-              <span className="text-[11px] text-slate-500">{task.progress}%</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-300 font-mono">{task.progress}%</span>
             </div>
           </div>
         </div>
@@ -92,10 +92,10 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
             type="button"
             onClick={handleTogglePause}
             disabled={loadingAction}
-            className={`p-2 rounded-full transition-all active:scale-90 ${
+            className={`p-2.5 rounded-full transition-all active:scale-90 border ${
               isPaused 
-                ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm' 
-                : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
+                ? 'bg-amber-400 text-slate-950 border-amber-300 hover:bg-amber-300 font-bold shadow-md' 
+                : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 hover:bg-cyan-500/30'
             }`}
             title={isPaused ? "Resume Download" : "Pause Download"}
             aria-label={isPaused ? "Resume Download" : "Pause Download"}
@@ -107,7 +107,7 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
             type="button"
             onClick={handleCancel}
             disabled={loadingAction}
-            className="p-2 rounded-full bg-slate-200/80 text-slate-500 hover:bg-rose-100 hover:text-rose-600 transition-all active:scale-90"
+            className="p-2.5 rounded-full bg-white/5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 hover:border-rose-500/30 transition-all active:scale-90"
             title="Cancel Download"
             aria-label="Cancel Download"
           >
@@ -116,23 +116,23 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full h-2 rounded-full bg-slate-200/60 overflow-hidden p-0.5">
+      {/* Futuristic Progress Bar */}
+      <div className="w-full h-2.5 rounded-full bg-black/60 border border-white/10 overflow-hidden p-0.5">
         <div 
-          className={`h-full rounded-full transition-all duration-300 shadow-sm ${
-            isPaused ? 'bg-amber-400' : 'bg-cyan-400'
+          className={`h-full rounded-full transition-all duration-300 ${
+            isPaused ? 'bg-amber-400' : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_12px_rgba(56,189,248,0.7)]'
           }`}
           style={{ width: `${task.progress}%` }}
         />
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+      <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
         <span>{downloadedMb} MB{totalMb ? ` / ${totalMb} MB` : ''}</span>
-        {task.eta_seconds && !isPaused ? <span>ETA: {task.eta_seconds}s</span> : null}
+        {task.eta_seconds && !isPaused ? <span className="text-cyan-400">ETA: {task.eta_seconds}s</span> : null}
       </div>
 
       {actionError && (
-        <div className="flex items-center gap-1 text-[11px] text-rose-600">
+        <div className="flex items-center gap-1.5 text-[11px] text-rose-400">
           <AlertCircle size={12} />
           <span>{actionError}</span>
         </div>

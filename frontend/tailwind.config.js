@@ -7,17 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        crystal: {
-          light: "rgba(255, 255, 255, 0.65)",
-          dark: "rgba(15, 23, 42, 0.75)",
-          accent: "#22d3ee",
+        cyber: {
+          bg: "#050814",
+          card: "rgba(14, 23, 47, 0.75)",
+          border: "rgba(56, 189, 248, 0.22)",
+          cyan: "#38bdf8",
+          blue: "#2563eb",
+          indigo: "#6366f1",
           amber: "#fbbf24",
         }
       },
       boxShadow: {
-        'crystal': '0 20px 40px -15px rgba(0, 0, 0, 0.15)',
-        'crystal-glow': '0 0 35px -5px rgba(34, 211, 238, 0.3)',
-        'fab-glow': '0 10px 25px -3px rgba(251, 191, 36, 0.45)',
+        'cyber-card': '0 20px 50px -15px rgba(2, 6, 23, 0.85), 0 0 25px -8px rgba(56, 189, 248, 0.15)',
+        'cyber-glow': '0 0 30px -4px rgba(56, 189, 248, 0.45)',
+        'cyber-fab': '0 12px 30px -4px rgba(37, 99, 235, 0.55), 0 0 20px 0 rgba(56, 189, 248, 0.45)',
+      },
+      transitionTimingFunction: {
+        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'fluid': 'cubic-bezier(0.16, 1, 0.3, 1)',
       }
     },
   },

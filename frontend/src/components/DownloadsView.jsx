@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { ArrowDownCircle, CheckCircle, Sparkles, Folder } from 'lucide-react';
 import { ActiveDownloadCard } from './ActiveDownloadCard';
 
 export function DownloadsView({ activeTask, onGoToHome, onGoToFiles }) {
@@ -7,55 +7,55 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles }) {
   const isTaskFinished = activeTask && activeTask.status === 'finished' && activeTask.file_id;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-md mx-auto px-4 pt-4 pb-28 animate-fade-in">
+    <div className="flex flex-col gap-6 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Downloads</h2>
-          <p className="text-xs text-slate-500">Live transfers & automatic device saving</p>
+          <h2 className="text-xl font-extrabold text-white tracking-tight">Downloads</h2>
+          <p className="text-xs text-slate-400">Live SSE telemetry & background queue</p>
         </div>
-        <div className="p-2.5 rounded-2xl bg-cyan-400/10 text-cyan-600">
-          <ArrowDownCircle size={22} />
+        <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 flex items-center justify-center shadow-inner">
+          <ArrowDownCircle size={20} />
         </div>
       </div>
 
       {isTaskActive && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-700 px-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-300 px-1">
             <span>In Progress</span>
-            <span className="font-mono text-cyan-600 animate-pulse">Live SSE Stream</span>
+            <span className="font-mono text-cyan-400 animate-pulse">Live Multi-Thread</span>
           </div>
           <ActiveDownloadCard task={activeTask} />
         </div>
       )}
 
       {isTaskFinished && (
-        <div className="crystal-card rounded-3xl p-4 border border-emerald-300/50 bg-emerald-50/20 flex flex-col gap-3 animate-fade-in shadow-crystal">
+        <div className="glass-cyber-active rounded-3xl p-5 border border-emerald-400/40 flex flex-col gap-3.5 animate-fade-in shadow-2xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-emerald-400/20 text-emerald-600">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center shadow-inner">
                 <CheckCircle size={20} />
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-slate-900">Download Complete</h4>
-                <p className="text-xs text-slate-500 truncate max-w-[220px]">{activeTask.title}</p>
+                <h4 className="font-bold text-sm text-white">Download Complete</h4>
+                <p className="text-xs text-slate-400 truncate max-w-[210px]">{activeTask.title}</p>
               </div>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-medium">Ready</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-mono font-medium">Ready</span>
           </div>
 
           <div className="flex items-center gap-2 pt-1">
             <a
               href={`/api/files/${activeTask.file_id}/download`}
               download={activeTask.filename}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-all active:scale-95"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:via-blue-400 hover:to-indigo-500 text-slate-950 text-xs font-bold shadow-md shadow-cyan-500/20 transition-all active:scale-95"
             >
-              <ArrowDownCircle size={15} />
+              <ArrowDownCircle size={15} strokeWidth={2.5} />
               <span>Save to Device Now</span>
             </a>
             <button
               type="button"
               onClick={onGoToFiles}
-              className="px-4 py-2.5 rounded-2xl bg-white/80 hover:bg-white text-slate-700 text-xs font-medium border border-slate-200 transition-all"
+              className="px-4 py-3 rounded-2xl glass-cyber text-slate-300 hover:text-white text-xs font-semibold border border-white/10 hover:border-cyan-400/40 transition-all"
             >
               Library
             </button>
@@ -64,18 +64,18 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles }) {
       )}
 
       {!isTaskActive && !isTaskFinished && (
-        <div className="flex flex-col items-center justify-center p-10 text-center crystal-card rounded-3xl gap-3">
-          <div className="p-4 rounded-full bg-slate-100 text-slate-400">
-            <CheckCircle size={32} />
+        <div className="flex flex-col items-center justify-center p-10 text-center glass-cyber rounded-3xl gap-3 border border-cyan-500/20 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 text-slate-500 flex items-center justify-center">
+            <CheckCircle size={28} />
           </div>
-          <h3 className="font-medium text-slate-800 text-sm">No Active Downloads</h3>
-          <p className="text-xs text-slate-400 max-w-xs">
-            Paste any video link in the Home tab to start a stream extraction. Completed videos automatically save to your device.
+          <h3 className="font-bold text-white text-sm">No Active Downloads</h3>
+          <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+            Paste any link in the Home tab to start a stream extraction. Completed videos automatically save to your device.
           </p>
           <button
             type="button"
             onClick={onGoToHome}
-            className="mt-2 px-5 py-2 rounded-full bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition-all flex items-center gap-1.5"
+            className="mt-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-95"
           >
             <Sparkles size={14} />
             <span>Inspect a Video</span>
@@ -84,17 +84,18 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles }) {
       )}
 
       {/* Quick link to completed media */}
-      <div className="p-4 rounded-2xl crystal-card border border-white/40 flex items-center justify-between">
+      <div className="p-4 rounded-3xl glass-cyber border border-white/10 flex items-center justify-between">
         <div className="flex flex-col">
-          <span className="text-xs font-semibold text-slate-800">Completed Media</span>
-          <span className="text-[11px] text-slate-500">Browse and stream your saved files</span>
+          <span className="text-xs font-bold text-white">Completed Media</span>
+          <span className="text-[11px] text-slate-400">Browse and stream your saved files</span>
         </div>
         <button
           type="button"
           onClick={onGoToFiles}
-          className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-all"
+          className="px-3.5 py-2 rounded-2xl glass-cyber text-cyan-300 hover:text-white hover:border-cyan-400/40 text-xs font-semibold transition-all border border-cyan-500/30 flex items-center gap-1.5"
         >
-          View Library
+          <Folder size={13} />
+          <span>View Library</span>
         </button>
       </div>
     </div>

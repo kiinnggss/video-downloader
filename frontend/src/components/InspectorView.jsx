@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Search, X, Download, Compass, Loader2, Key, Settings } from 'lucide-react';
+import { Search, X, Download, Compass, Loader2, Settings, Smartphone, Sparkles } from 'lucide-react';
 import { apiClient, getDeviceId } from '../api/client';
 import { FormatPickerModal } from './FormatPickerModal';
 import { CookieSettingsModal } from './CookieSettingsModal';
 
-export function InspectorView({ onDownloadStarted }) {
+export function InspectorView({ onDownloadStarted, onOpenInstallModal, hasInstallPrompt }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [inspectData, setInspectData] = useState(null);
@@ -59,40 +59,67 @@ export function InspectorView({ onDownloadStarted }) {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="flex flex-col gap-6 w-full max-w-md mx-auto px-4 pt-5 pb-28">
       {/* Top Header */}
       <div className="flex items-center justify-between w-full px-1">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Crystal</h1>
-          <p className="text-[11px] text-slate-500">Universal mobile media downloader</p>
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex items-center justify-center">
+            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-ping absolute opacity-75" />
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 relative z-10" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1">
+              Crystal
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                PRO
+              </span>
+            </h1>
+            <p className="text-[11px] text-slate-400">Universal cyber glass downloader</p>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCookieModalOpen(true)}
-          className="p-2 rounded-full crystal-card text-slate-500 hover:text-slate-800 transition-all border border-white/40 shadow-sm"
-          title="Settings and Session Cookies"
-          aria-label="Settings and Session Cookies"
-        >
-          <Settings size={18} />
-        </button>
+
+        {/* Action cluster */}
+        <div className="flex items-center gap-2">
+          {onOpenInstallModal && (
+            <button
+              type="button"
+              onClick={onOpenInstallModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-cyber text-xs font-semibold text-cyan-300 hover:text-white hover:border-cyan-400/60 transition-all shadow-sm active:scale-95 border border-cyan-500/30"
+              title="Download app to your phone"
+            >
+              <Smartphone size={13} className="text-cyan-400" />
+              <span>Get App</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsCookieModalOpen(true)}
+            className="p-2 rounded-full glass-cyber text-slate-400 hover:text-white transition-all active:scale-95 border border-cyan-500/20"
+            title="Session settings"
+            aria-label="Session settings"
+          >
+            <Settings size={15} />
+          </button>
+        </div>
       </div>
 
-      {/* Search / Address Pill */}
+      {/* Futuristic Search / Address Pill */}
       <form onSubmit={handleInspect} className="relative w-full">
-        <div className="flex items-center w-full crystal-card rounded-full px-4 py-2.5 shadow-sm">
-          <Search size={18} className="text-slate-400 mr-2 flex-shrink-0" />
+        <div className="flex items-center w-full glass-cyber-input rounded-full px-4 py-2.5 shadow-lg border border-cyan-500/30 focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all">
+          <Search size={18} className="text-cyan-400/70 mr-2 flex-shrink-0" />
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste video link here..."
-            className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+            placeholder="Paste video link from YouTube, TikTok, X..."
+            className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-medium"
           />
           {url && (
             <button
               type="button"
               onClick={() => setUrl('')}
-              className="p-1 text-slate-400 hover:text-slate-600"
+              className="p-1 text-slate-400 hover:text-white transition-colors"
               aria-label="Clear URL input"
             >
               <X size={16} />
@@ -101,21 +128,22 @@ export function InspectorView({ onDownloadStarted }) {
           <button
             type="submit"
             disabled={loading || !url}
-            className="ml-2 px-4 py-1.5 rounded-full bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center gap-1.5"
+            className="ml-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:via-blue-400 hover:to-indigo-500 disabled:opacity-40 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/25 transition-all flex items-center gap-1.5 active:scale-95"
           >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : 'Inspect'}
+            {loading ? <Loader2 size={14} className="animate-spin text-slate-950" /> : 'Inspect'}
           </button>
         </div>
       </form>
 
+      {/* Notifications */}
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 text-xs text-center flex flex-col items-center gap-2">
+        <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs text-center flex flex-col items-center gap-2 backdrop-blur-md">
           <span>{errorMsg}</span>
           {(errorMsg.toLowerCase().includes('sign in') || errorMsg.toLowerCase().includes('age') || errorMsg.toLowerCase().includes('restricted') || errorMsg.toLowerCase().includes('private') || errorMsg.toLowerCase().includes('bot')) && (
             <button
               type="button"
               onClick={() => setIsCookieModalOpen(true)}
-              className="text-[11px] underline font-medium text-rose-800 hover:text-rose-950"
+              className="text-[11px] underline font-semibold text-cyan-300 hover:text-white"
             >
               Sign-in required? Add session cookies
             </button>
@@ -124,58 +152,58 @@ export function InspectorView({ onDownloadStarted }) {
       )}
 
       {toastMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-xs text-center font-medium animate-fade-in flex items-center justify-center gap-2">
-          <Download size={15} className="text-emerald-600" />
+        <div className="p-3.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-xs text-center font-medium animate-fade-in flex items-center justify-center gap-2 backdrop-blur-md shadow-lg shadow-cyan-950/40">
+          <Download size={15} className="text-cyan-400" />
           <span>{toastMsg}</span>
         </div>
       )}
 
       {/* Video Preview Card */}
       {inspectData ? (
-        <div className="crystal-card rounded-3xl overflow-hidden shadow-crystal flex flex-col gap-4 p-4 animate-fade-in">
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-900 shadow-inner">
+        <div className="glass-cyber-active rounded-3xl overflow-hidden flex flex-col gap-4 p-4 animate-fade-in">
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-white/10 shadow-inner">
             <img 
               src={inspectData.thumbnail} 
               alt={inspectData.title} 
               className="w-full h-full object-cover" 
             />
-            <span className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-xl text-white text-[11px] font-mono">
+            <span className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-cyan-300 text-[11px] font-mono">
               {Math.floor((inspectData.duration || 0) / 60)}:{String((inspectData.duration || 0) % 60).padStart(2, '0')}
             </span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-base text-slate-900 line-clamp-2 leading-tight">
+          <div className="flex flex-col gap-1.5">
+            <h2 className="font-bold text-base text-white line-clamp-2 leading-tight">
               {inspectData.title}
             </h2>
-            <p className="text-xs text-slate-500">
-              from <span className="font-medium text-slate-700">{inspectData.author}</span>
+            <p className="text-xs text-slate-400">
+              from <span className="font-semibold text-cyan-400">{inspectData.author}</span>
             </p>
           </div>
         </div>
       ) : (
         /* Empty state helper */
-        <div className="flex flex-col items-center justify-center p-12 text-center crystal-card rounded-3xl gap-3">
-          <div className="p-4 rounded-full bg-amber-400/10 text-amber-500">
+        <div className="flex flex-col items-center justify-center p-10 text-center glass-cyber rounded-3xl gap-3 border border-cyan-500/20 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-600/20 to-indigo-600/30 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-inner">
             <Compass size={32} />
           </div>
-          <h3 className="font-medium text-slate-800 text-sm">Paste any link to begin</h3>
-          <p className="text-xs text-slate-400 max-w-xs">
-            Supports YouTube, Vimeo, TikTok, Instagram, Twitter, and direct MP4 streams.
+          <h3 className="font-bold text-white text-sm">Paste any link to begin</h3>
+          <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+            Fast multi-threaded extraction for YouTube, TikTok, X (Twitter), Instagram, and direct MP4 streams.
           </p>
         </div>
       )}
 
-      {/* Floating Action Button */}
+      {/* 3D Floating Action Button */}
       {inspectData && (
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-24 right-6 p-4 rounded-full bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-950 shadow-fab-glow transition-all z-40 flex items-center justify-center"
+          className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 text-white shadow-cyber-fab transition-transform duration-200 z-40 flex items-center justify-center active:scale-90 border border-white/30"
           title="Download Video"
           aria-label="Download Video"
         >
-          <Download size={26} strokeWidth={2.5} />
+          <Download size={24} strokeWidth={2.6} className="drop-shadow-sm" />
         </button>
       )}
 
@@ -195,3 +223,5 @@ export function InspectorView({ onDownloadStarted }) {
     </div>
   );
 }
+
+export default InspectorView;

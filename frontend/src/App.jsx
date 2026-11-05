@@ -5,16 +5,30 @@ import { FilesView } from './components/FilesView';
 import { VaultView } from './components/VaultView';
 import { BottomNav } from './components/BottomNav';
 import { MiniDownloadBanner } from './components/MiniDownloadBanner';
+import { InstallAppModal } from './components/InstallAppModal';
 import { useTelemetry } from './api/telemetry';
 import { apiClient } from './api/client';
 
 export default function App() {
   const [tab, setTab] = useState('home');
+  const [installPromptEvent, setInstallPromptEvent] = useState(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const { activeTask } = useTelemetry();
 
   const isDownloading = Boolean(
     activeTask && (activeTask.status === 'downloading' || activeTask.status === 'paused' || activeTask.status === 'queued')
   );
+
+  // Capture PWA install prompt event on Android/Chrome/Edge
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPromptEvent(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
   // Keep-alive heartbeat: ping every 25 seconds to prevent serverless container from sleeping
   useEffect(() => {
@@ -48,11 +62,15 @@ export default function App() {
   }, [isDownloading]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${
-      tab === 'vault' ? 'bg-slate-950 text-white' : 'bg-gradient-to-b from-slate-100 via-slate-50 to-amber-50/20 text-slate-900'
-    }`}>
-      <main className="w-full min-h-screen flex flex-col">
-        {tab === 'home' && <InspectorView onDownloadStarted={() => setTab('downloads')} />}
+    <div className="min-h-screen cyber-mesh-bg text-slate-100 flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200">
+      <main className="w-full flex-1 flex flex-col pb-24">
+        {tab === 'home' && (
+          <InspectorView 
+            onDownloadStarted={() => setTab('downloads')}
+            onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            hasInstallPrompt={Boolean(installPromptEvent)}
+          />
+        )}
         {tab === 'downloads' && (
           <DownloadsView
             activeTask={activeTask}
@@ -72,12 +90,19 @@ export default function App() {
         />
       )}
 
+      {/* Fluid Morphing Glass Navigation Bar */}
       <BottomNav
         currentTab={tab}
         onChangeTab={setTab}
         activeDownloadCount={isDownloading ? 1 : 0}
       />
+
+      {/* Download to Phone PWA Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        installPromptEvent={installPromptEvent}
+      />
     </div>
   );
 }
-

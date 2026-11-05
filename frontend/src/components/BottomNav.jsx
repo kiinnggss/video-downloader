@@ -12,60 +12,49 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
   const activeIndex = TABS.findIndex((t) => t.id === currentTab);
   const safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
-  // Percentage offset for active tab position (4 tabs = 25% each, center at 12.5% + 25% * i)
+  // Percentage offset for active tab position (4 tabs = 25% each)
   const tabPercent = 100 / TABS.length;
-  const activeCenterPercent = safeIndex * tabPercent + tabPercent / 2;
-
-  const isVault = currentTab === 'vault';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-4 px-4 pointer-events-none select-none">
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-5 px-4 pointer-events-none select-none">
       <div className="relative w-full max-w-sm pointer-events-auto">
-        {/* Main curved navigation bar container */}
-        <div
-          className={`relative flex items-center justify-around h-16 rounded-[28px] px-2 shadow-2xl transition-all duration-500 backdrop-blur-2xl border ${
-            isVault
-              ? 'bg-slate-900/90 border-slate-700/60 shadow-black/60'
-              : 'bg-white/90 border-white/60 shadow-slate-900/10'
-          }`}
-        >
-          {/* Animated Curved Scoop / Notch Background cutout */}
+        {/* Main curved cyber glass navigation container */}
+        <div className="relative flex items-center justify-around h-16 rounded-[30px] px-2 shadow-2xl glass-dock transition-all duration-500">
+          
+          {/* Subtle curved light notch cutout */}
           <div
-            className="absolute top-0 -translate-y-[1px] h-3 transition-all duration-300 ease-out pointer-events-none flex justify-center"
+            className="absolute top-0 -translate-y-[1px] h-3.5 transition-all duration-400 pointer-events-none flex justify-center"
             style={{
               left: `${safeIndex * tabPercent}%`,
               width: `${tabPercent}%`,
+              transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
             <svg
               viewBox="0 0 100 24"
-              className={`w-16 h-4 transition-colors duration-500 ${
-                isVault ? 'fill-slate-900/90' : 'fill-white/90'
-              }`}
+              className="w-16 h-3.5 fill-[#080e22] opacity-90 transition-all duration-300"
             >
               <path d="M 0 0 C 20 0 30 20 50 20 C 70 20 80 0 100 0 Z" />
             </svg>
           </div>
 
-          {/* Animated Elevated Floating Bubble */}
+          {/* 3D Isometric Floating Active Bubble */}
           <div
-            className="absolute -top-5 transition-all duration-300 ease-out pointer-events-none flex justify-center"
+            className="absolute -top-5.5 transition-all duration-400 pointer-events-none flex justify-center"
             style={{
               left: `${safeIndex * tabPercent}%`,
               width: `${tabPercent}%`,
+              transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform duration-300 active:scale-95 ${
-                isVault
-                  ? 'bg-gradient-to-tr from-amber-400 to-amber-300 text-slate-950 shadow-amber-400/30'
-                  : 'bg-gradient-to-tr from-slate-950 to-slate-800 text-white shadow-slate-900/30'
-              }`}
-            >
+            <div className="relative w-12 h-12 rounded-full flex items-center justify-center glass-3d-bubble transition-transform duration-300">
+              {/* Specular light highlight reflection */}
+              <div className="absolute top-1 left-2.5 right-2.5 h-3 rounded-full bg-white/40 blur-[1px] pointer-events-none" />
+              
               {React.createElement(TABS[safeIndex].icon, {
                 size: 22,
-                strokeWidth: 2.2,
-                className: 'transition-transform duration-200',
+                strokeWidth: 2.4,
+                className: 'text-white relative z-10 drop-shadow-md',
               })}
             </div>
           </div>
@@ -81,7 +70,7 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
                 key={tab.id}
                 type="button"
                 onClick={() => onChangeTab(tab.id)}
-                className="relative z-10 flex-1 flex flex-col items-center justify-end h-full pb-2.5 transition-all outline-none"
+                className="relative z-10 flex-1 flex flex-col items-center justify-end h-full pb-2.5 transition-all outline-none active:scale-95"
                 aria-label={tab.label}
               >
                 {/* Inactive Icon */}
@@ -89,24 +78,20 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
                   className={`transition-all duration-300 flex items-center justify-center ${
                     isActive
                       ? 'opacity-0 scale-75 pointer-events-none h-0 mb-0'
-                      : isVault
-                      ? 'text-slate-400 hover:text-white mb-1'
-                      : 'text-slate-400 hover:text-slate-700 mb-1'
+                      : 'text-slate-400 hover:text-cyan-300 mb-1'
                   }`}
                 >
                   <Icon size={20} strokeWidth={1.8} />
                   {showBadge && !isActive && (
-                    <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-cyan-400 ring-2 ring-white animate-pulse" />
+                    <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-cyan-400 ring-2 ring-[#050814] animate-pulse" />
                   )}
                 </div>
 
-                {/* Active or Inactive Label */}
+                {/* Active Label */}
                 <span
-                  className={`text-[11px] font-medium tracking-tight transition-all duration-300 ${
+                  className={`text-[11px] tracking-tight transition-all duration-300 font-semibold ${
                     isActive
-                      ? isVault
-                        ? 'text-amber-400 font-semibold translate-y-0.5'
-                        : 'text-slate-900 font-semibold translate-y-0.5'
+                      ? 'text-cyan-400 translate-y-0.5 opacity-100 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]'
                       : 'text-transparent opacity-0 text-[0px]'
                   }`}
                 >
