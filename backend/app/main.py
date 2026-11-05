@@ -43,7 +43,7 @@ app.add_middleware(
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "build": "v2-bot-fix"}
+    return {"status": "ok", "build": "v3-glass-pwa-hls"}
 
 
 @app.get("/api/keepalive")
