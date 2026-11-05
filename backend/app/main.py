@@ -226,10 +226,19 @@ def get_vault_files(authorization: Optional[str] = Header(None), x_device_id: Op
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
-frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
-if not frontend_dir.exists():
-    frontend_dir = Path("/app/frontend/dist")
+candidates = [
+    Path(__file__).resolve().parent.parent.parent / "frontend" / "dist",
+    Path("/app/frontend/dist"),
+    Path("/app/dist"),
+    Path("frontend/dist").resolve(),
+    Path("dist").resolve(),
+]
+frontend_dir = None
+for c in candidates:
+    if c.exists() and (c / "index.html").exists():
+        frontend_dir = c
+        break
 
-if frontend_dir.exists():
+if frontend_dir:
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
