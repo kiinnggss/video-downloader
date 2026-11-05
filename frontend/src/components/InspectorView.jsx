@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, Download, Compass, Loader2, Key } from 'lucide-react';
+import { Search, X, Download, Compass, Loader2, Key, Settings } from 'lucide-react';
 import { apiClient, getDeviceId } from '../api/client';
 import { FormatPickerModal } from './FormatPickerModal';
 import { CookieSettingsModal } from './CookieSettingsModal';
@@ -66,6 +66,15 @@ export function InspectorView({ onDownloadStarted }) {
           <h1 className="text-xl font-bold tracking-tight text-slate-900">Crystal</h1>
           <p className="text-[11px] text-slate-500">Universal mobile media downloader</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsCookieModalOpen(true)}
+          className="p-2 rounded-full crystal-card text-slate-500 hover:text-slate-800 transition-all border border-white/40 shadow-sm"
+          title="Settings and Session Cookies"
+          aria-label="Settings and Session Cookies"
+        >
+          <Settings size={18} />
+        </button>
       </div>
 
       {/* Search / Address Pill */}
