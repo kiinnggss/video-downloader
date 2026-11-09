@@ -9,91 +9,132 @@
 }
 
 @layer utilities {
-  /* Isometric Cyber Blue Glass Cards */
-  .glass-cyber {
-    background: linear-gradient(135deg, rgba(14, 23, 47, 0.75) 0%, rgba(6, 11, 26, 0.88) 100%);
+  /* Bento Studio Frosted Glass (Irma + Aveniq) */
+  .bento-card {
+    background: linear-gradient(145deg, rgba(16, 22, 44, 0.65) 0%, rgba(8, 12, 26, 0.85) 100%);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(56, 189, 248, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 
-      0 20px 50px -15px rgba(2, 6, 23, 0.85),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 1px 0 rgba(56, 189, 248, 0.12),
-      0 0 25px -8px rgba(56, 189, 248, 0.15);
+      0 20px 45px -12px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
   }
 
-  /* Vibrant active glass card */
-  .glass-cyber-active {
-    background: linear-gradient(135deg, rgba(16, 30, 66, 0.85) 0%, rgba(8, 16, 38, 0.95) 100%);
+  .bento-card-active {
+    background: linear-gradient(145deg, rgba(20, 30, 60, 0.75) 0%, rgba(10, 16, 36, 0.92) 100%);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(56, 189, 248, 0.45);
+    border: 1px solid rgba(0, 240, 255, 0.35);
     box-shadow: 
-      0 25px 60px -15px rgba(2, 6, 23, 0.9),
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.35),
-      0 0 35px -5px rgba(56, 189, 248, 0.35);
+      0 24px 50px -10px rgba(0, 0, 0, 0.85),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.28),
+      0 0 30px -8px rgba(0, 240, 255, 0.25);
   }
 
-  /* Subtle card for lists and preview details */
+  /* Sports Live Telemetry Card */
+  .bento-telemetry {
+    background: linear-gradient(145deg, rgba(12, 18, 32, 0.88) 0%, rgba(6, 9, 20, 0.96) 100%);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(204, 255, 0, 0.25);
+    box-shadow: 
+      0 24px 50px -10px rgba(0, 0, 0, 0.9),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 35px -10px rgba(204, 255, 0, 0.18);
+  }
+
+  /* Command Bar Input (Aveniq) */
+  .bento-command-bar {
+    background: rgba(10, 15, 30, 0.78);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 12px 30px -8px rgba(0, 0, 0, 0.7),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  /* Backward compatible glass classes */
+  .glass-cyber {
+    background: linear-gradient(145deg, rgba(16, 22, 44, 0.65) 0%, rgba(8, 12, 26, 0.85) 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 20px 45px -12px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .glass-cyber-active {
+    background: linear-gradient(145deg, rgba(20, 30, 60, 0.75) 0%, rgba(10, 16, 36, 0.92) 100%);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+  }
+
   .glass-cyber-subtle {
-    background: rgba(10, 16, 36, 0.55);
+    background: rgba(10, 15, 32, 0.55);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
-  /* Pill input & capsule */
   .glass-cyber-input {
-    background: rgba(8, 14, 32, 0.8);
+    background: rgba(8, 12, 26, 0.8);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    box-shadow: 
-      inset 0 2px 4px 0 rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   /* Bottom Navigation Dock */
   .glass-dock {
-    background: linear-gradient(180deg, rgba(12, 19, 41, 0.88) 0%, rgba(6, 10, 24, 0.96) 100%);
+    background: linear-gradient(180deg, rgba(10, 15, 32, 0.9) 0%, rgba(4, 7, 18, 0.98) 100%);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 
-      0 20px 45px -10px rgba(2, 6, 23, 0.9),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
-      0 0 30px -5px rgba(56, 189, 248, 0.2);
+      0 20px 45px -10px rgba(0, 0, 0, 0.9),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
   }
 
-  /* 3D Glass Floating Active Bubble */
+  /* Tactile Floating Active Bubble */
   .glass-3d-bubble {
-    background: linear-gradient(135deg, #38bdf8 0%, #2563eb 50%, #4f46e5 100%);
+    background: linear-gradient(135deg, #ccff00 0%, #10b981 100%);
+    color: #04060d;
     box-shadow: 
-      0 12px 28px -4px rgba(37, 99, 235, 0.55),
-      0 0 20px 0 rgba(56, 189, 248, 0.4),
-      inset 0 2px 2px 0 rgba(255, 255, 255, 0.6),
-      inset 0 -2px 3px 0 rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+      0 10px 25px -4px rgba(204, 255, 0, 0.5),
+      inset 0 2px 2px 0 rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.5);
   }
 
-  /* Ambient glowing backdrop */
+  /* Ambient dual-bloom background */
   .cyber-mesh-bg {
-    background-color: #050814;
+    background-color: #04060d;
     background-image: 
-      radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.18) 0%, transparent 40%),
-      radial-gradient(circle at 85% 25%, rgba(99, 102, 241, 0.16) 0%, transparent 42%),
-      radial-gradient(circle at 50% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 45%);
+      radial-gradient(circle at 10% 10%, rgba(204, 255, 0, 0.08) 0%, transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(0, 240, 255, 0.14) 0%, transparent 45%),
+      radial-gradient(circle at 50% 85%, rgba(99, 102, 241, 0.12) 0%, transparent 50%);
     background-attachment: fixed;
   }
 }
 
-/* Animations */
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.03); }
+/* Radar Beacon Animation */
+@keyframes radar-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.radar-ping {
+  animation: radar-ring 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Tactile Spring Press Effect */
+.spring-press {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+}
+
+.spring-press:active {
+  transform: scale(0.96);
 }
