@@ -39,61 +39,74 @@ export function MiniDownloadBanner({ task, onOpenDownloads }) {
 
   return (
     <div className="fixed bottom-24 left-4 right-4 z-30 flex justify-center pointer-events-none">
-      <div 
+      <div
         onClick={onOpenDownloads}
-        className="w-full max-w-sm glass-cyber rounded-2xl p-2.5 px-3.5 border border-cyan-500/30 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in hover:border-cyan-400/60 transition-all shadow-cyber-card"
-        title="Tap to open Downloads"
+        className="w-full max-w-sm bento-telemetry rounded-2xl p-2.5 px-3.5 border border-lime-neon/30 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in hover:border-lime-neon/60 transition-all shadow-lime-glow spring-press"
+        title="Tap to inspect active download"
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border ${
-            isPaused ? 'bg-amber-500/20 text-amber-400 border-amber-400/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30'
-          }`}>
-            <ArrowDownCircle size={17} className={isPaused ? '' : 'animate-pulse'} />
+          {/* Radar indicator */}
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+              isPaused
+                ? 'bg-amber-vault/20 text-amber-vault border-amber-vault/30'
+                : 'bg-lime-neon/15 text-lime-neon border-lime-neon/40 shadow-inner'
+            }`}
+          >
+            <ArrowDownCircle size={16} className={isPaused ? '' : 'animate-pulse'} />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <h5 className="text-xs font-bold text-white truncate">
-                {task.title || 'Downloading media...'}
+                {task.title || 'Downloading stream...'}
               </h5>
-              <span className="text-[11px] font-mono font-semibold text-cyan-400 flex-shrink-0">
+              <span className="text-[11px] font-mono font-black text-lime-neon flex-shrink-0">
                 {task.progress}%
               </span>
             </div>
 
-            {/* Mini Progress Line */}
-            <div className="w-full h-1.5 rounded-full bg-black/60 border border-white/10 overflow-hidden mt-1">
-              <div 
+            {/* Segmented mini progress */}
+            <div className="w-full h-1.5 rounded-full bg-obsidian-base border border-white/10 overflow-hidden mt-1.5">
+              <div
                 className={`h-full rounded-full transition-all duration-300 ${
-                  isPaused ? 'bg-amber-400' : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_8px_rgba(56,189,248,0.7)]'
+                  isPaused
+                    ? 'bg-amber-vault'
+                    : 'bg-gradient-to-r from-cyan-cyber via-lime-neon to-emerald-400 shadow-[0_0_8px_rgba(204,255,0,0.8)]'
                 }`}
-                style={{ width: `${task.progress}%` }}
+                style={{ width: `${Math.max(3, task.progress)}%` }}
               />
             </div>
           </div>
         </div>
 
         {/* Quick controls */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             type="button"
             onClick={handleTogglePause}
             disabled={loading}
-            className={`p-1.5 rounded-full transition-all active:scale-90 border ${
-              isPaused 
-                ? 'bg-amber-400 text-slate-950 border-amber-300' 
-                : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 hover:bg-cyan-500/30'
+            className={`p-1.5 rounded-lg transition-all spring-press border ${
+              isPaused
+                ? 'bg-amber-vault text-obsidian border-amber-300 font-bold'
+                : 'bg-lime-neon/20 text-lime-neon border-lime-neon/40 hover:bg-lime-neon hover:text-obsidian'
             }`}
-            title={isPaused ? "Resume" : "Pause"}
+            title={isPaused ? 'Resume' : 'Pause'}
           >
-            {loading ? <Loader2 size={13} className="animate-spin" /> : isPaused ? <Play size={13} /> : <Pause size={13} />}
+            {loading ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : isPaused ? (
+              <Play size={13} strokeWidth={2.5} />
+            ) : (
+              <Pause size={13} strokeWidth={2.5} />
+            )}
           </button>
 
           <button
             type="button"
             onClick={handleCancel}
             disabled={loading}
-            className="p-1.5 rounded-full bg-white/5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 transition-all active:scale-90"
+            className="p-1.5 rounded-lg bg-white/5 text-slate-400 hover:bg-crimson-tactical/20 hover:text-rose-300 border border-white/10 transition-all spring-press"
             title="Cancel"
           >
             <X size={13} />
