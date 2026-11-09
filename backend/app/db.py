@@ -58,13 +58,28 @@ def init_db(db_path: str = None):
             conn.execute("ALTER TABLE media_files ADD COLUMN device_id TEXT")
         except sqlite3.OperationalError:
             pass
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS vault_auth (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                pin_hash TEXT NOT NULL
-            )
-        """)
+
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(vault_auth)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if not cols:
+            conn.execute("""
+                CREATE TABLE vault_auth (
+                    device_id TEXT PRIMARY KEY,
+                    pin_hash TEXT NOT NULL
+                )
+            """)
+        elif "device_id" not in cols:
+            conn.execute("DROP TABLE IF EXISTS vault_auth")
+            conn.execute("""
+                CREATE TABLE vault_auth (
+                    device_id TEXT PRIMARY KEY,
+                    pin_hash TEXT NOT NULL
+                )
+            """)
     conn.close()
+
+init_db()
 
 def save_task(task: DownloadTask, db_path: str = None):
     conn = get_connection(db_path)
@@ -170,3 +185,11 @@ def get_media_file(file_id: str, db_path: str = None) -> Optional[MediaFile]:
         device_id=row["device_id"] if "device_id" in keys else None,
     )
 
+def delete_media_file(file_id: str, db_path: str = None) -> bool:
+    conn = get_connection(db_path)
+    with conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM media_files WHERE file_id = ?", (file_id,))
+        deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted

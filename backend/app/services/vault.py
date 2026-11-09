@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 import time
-from typing import Dict
+from typing import Dict, Optional
 from app.db import get_connection
 
 vault_sessions: Dict[str, float] = {}
@@ -10,21 +10,48 @@ DEFAULT_PIN = "1234"
 def hash_pin(pin: str) -> str:
     return hashlib.sha256(pin.encode("utf-8")).hexdigest()
 
-def set_pin(pin: str, db_path: str = None):
+def set_pin(pin: str, device_id: str = "default", db_path: str = None):
     conn = get_connection(db_path)
     pin_h = hash_pin(pin)
+    dev = device_id or "default"
     with conn:
-        conn.execute("INSERT OR REPLACE INTO vault_auth (id, pin_hash) VALUES (1, ?)", (pin_h,))
+        conn.execute("INSERT OR REPLACE INTO vault_auth (device_id, pin_hash) VALUES (?, ?)", (dev, pin_h))
     conn.close()
 
-def verify_pin(pin: str, db_path: str = None) -> bool:
+def has_pin(device_id: str = "default", db_path: str = None) -> bool:
     conn = get_connection(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT pin_hash FROM vault_auth WHERE id = 1")
-    row = cursor.fetchone()
+    dev = device_id or "default"
+    row = None
+    try:
+        cursor.execute("SELECT pin_hash FROM vault_auth WHERE device_id = ?", (dev,))
+        row = cursor.fetchone()
+    except Exception:
+        pass
+    conn.close()
+    return row is not None
+
+def verify_pin(pin: str, device_id: str = "default", db_path: str = None) -> bool:
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    dev = device_id or "default"
+    row = None
+    try:
+        cursor.execute("SELECT pin_hash FROM vault_auth WHERE device_id = ?", (dev,))
+        row = cursor.fetchone()
+    except Exception:
+        pass
+
+    if not row:
+        # Check backwards compatibility id=1
+        try:
+            cursor.execute("SELECT pin_hash FROM vault_auth WHERE id = 1")
+            row = cursor.fetchone()
+        except Exception:
+            pass
+
     conn.close()
     if not row:
-        # Default pin 1234
         return pin == DEFAULT_PIN
     return row["pin_hash"] == hash_pin(pin)
 
