@@ -140,6 +140,53 @@ export const apiClient = {
     return res.json();
   },
 
+  async deleteFile(fileId, token = null) {
+    const headers = {
+      'X-Device-Id': getDeviceId(),
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`/api/files/${fileId}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to delete file');
+    }
+    return res.json();
+  },
+
+  async checkVaultPinStatus() {
+    const res = await fetch('/api/vault/pin-status', {
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
+    if (!res.ok) return { has_pin: false };
+    return res.json();
+  },
+
+  async setVaultPin(newPin, currentPin = null) {
+    const res = await fetch('/api/vault/set-pin', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': getDeviceId(),
+      },
+      body: JSON.stringify({
+        new_pin: newPin,
+        current_pin: currentPin,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to set PIN');
+    }
+    return res.json();
+  },
+
   async unlockVault(pin) {
     const res = await fetch('/api/vault/unlock', {
       method: 'POST',
@@ -162,6 +209,34 @@ export const apiClient = {
     });
     if (!res.ok) throw new Error('Vault locked');
     return res.json();
+  },
+
+  async uploadVaultFile(file, token) {
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'X-Device-Id': getDeviceId(),
+      'X-Filename': encodeURIComponent(file.name),
+      'Content-Type': file.type || 'application/octet-stream',
+    };
+    const res = await fetch('/api/vault/upload', {
+      method: 'POST',
+      headers,
+      body: file,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return res.json();
+  },
+
+  getVaultPlaylistUrl(token, fileIds = []) {
+    const params = new URLSearchParams();
+    if (token) params.set('token', token);
+    if (fileIds && fileIds.length > 0) {
+      params.set('file_ids', fileIds.join(','));
+    }
+    return `/api/vault/playlist.m3u?${params.toString()}`;
   },
 
   async pingKeepAlive() {
