@@ -62,7 +62,7 @@ export default function App() {
   }, [isDownloading]);
 
   return (
-    <div className="min-h-screen cyber-mesh-bg text-slate-100 flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen cyber-mesh-bg text-slate-900 flex flex-col justify-between selection:bg-cyan-500/20 selection:text-cyan-900">
       <main className="w-full flex-1 flex flex-col pb-24">
         {tab === 'home' && (
           <InspectorView 

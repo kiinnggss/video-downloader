@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Download, Film, Music, Trash2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Play, Download, Film, Music, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ActiveDownloadCard } from './ActiveDownloadCard';
 import { MediaPlayerModal } from './MediaPlayerModal';
@@ -46,21 +46,21 @@ export function FilesView({ activeTask }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-black text-white tracking-tight uppercase font-mono">
+            <h1 className="text-lg font-black text-slate-950 tracking-tight uppercase font-mono">
               Media Library
             </h1>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-cyber/15 text-cyan-cyber border border-cyan-cyber/30">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200">
               {files.length} ITEMS
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-medium pt-0.5">
+          <p className="text-xs text-slate-500 font-medium pt-0.5">
             Offline media storage and direct player playback
           </p>
         </div>
       </div>
 
       {/* Segmented Bento Capsules */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-obsidian-surface border border-white/10">
+      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200/90">
         {[
           { id: 'all', label: 'All Media' },
           { id: 'video', label: 'Videos' },
@@ -72,8 +72,8 @@ export function FilesView({ activeTask }) {
             onClick={() => setTab(t.id)}
             className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all spring-press ${
               tab === t.id
-                ? 'bg-cyan-cyber text-obsidian shadow-cyan-glow border border-cyan-200'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-cyan-600 text-white shadow-sm border border-cyan-700'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             {t.label}
@@ -82,7 +82,7 @@ export function FilesView({ activeTask }) {
       </div>
 
       {errorMessage && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-crimson-tactical/15 border border-crimson-tactical/30 text-rose-300 text-xs">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
           <AlertCircle size={14} />
           <span>{errorMessage}</span>
         </div>
@@ -94,9 +94,9 @@ export function FilesView({ activeTask }) {
       {/* Files List */}
       <div className="flex flex-col gap-2.5">
         {files.length === 0 ? (
-          <div className="bento-card rounded-3xl p-10 text-center text-slate-400 text-xs border border-white/10 flex flex-col items-center gap-2">
-            <Film size={28} className="text-slate-600 mb-1" />
-            <span className="font-semibold text-slate-300">No media stored yet</span>
+          <div className="bento-card rounded-3xl p-10 text-center text-slate-500 text-xs border border-slate-200/80 flex flex-col items-center gap-2">
+            <Film size={28} className="text-slate-400 mb-1" />
+            <span className="font-semibold text-slate-800">No media stored yet</span>
             <span className="text-[11px] text-slate-500">
               Downloaded videos and audio will appear here for instant offline playback.
             </span>
@@ -105,32 +105,32 @@ export function FilesView({ activeTask }) {
           files.map((file) => (
             <div
               key={file.file_id}
-              className="flex items-center justify-between p-3.5 bento-card rounded-2xl hover:border-cyan-cyber/40 hover:bg-white/[0.04] transition-all shadow-sm group border border-white/10 spring-press"
+              className="flex items-center justify-between p-3.5 bento-card rounded-2xl hover:border-cyan-400 hover:shadow-md transition-all shadow-sm group border border-slate-200/80 spring-press"
             >
               <div
                 onClick={() => setSelectedMedia(file)}
                 className="flex items-center gap-3 truncate cursor-pointer flex-1"
               >
-                <div className="w-12 h-12 rounded-xl bg-obsidian-base border border-white/10 overflow-hidden flex-shrink-0 relative flex items-center justify-center text-white shadow-inner">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-200 overflow-hidden flex-shrink-0 relative flex items-center justify-center text-white shadow-inner">
                   {file.thumbnail ? (
                     <img src={file.thumbnail} alt={file.title} className="w-full h-full object-cover" />
                   ) : file.category === 'music' ? (
-                    <Music size={18} className="text-cyan-cyber" />
+                    <Music size={18} className="text-cyan-400" />
                   ) : (
                     <Film size={18} className="text-lime-neon" />
                   )}
-                  <div className="absolute inset-0 bg-obsidian-base/50 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Play size={15} fill="white" className="text-white drop-shadow" />
                   </div>
                 </div>
 
                 <div className="truncate pr-2">
-                  <h4 className="font-bold text-xs text-white truncate leading-snug">{file.title}</h4>
+                  <h4 className="font-bold text-xs text-slate-950 truncate leading-snug">{file.title}</h4>
                   <div className="flex items-center gap-2 pt-0.5">
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/5 text-cyan-cyber font-semibold border border-white/10">
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-cyan-700 font-semibold border border-slate-200">
                       {((file.filesize || 0) / (1024 * 1024)).toFixed(2)} MB
                     </span>
-                    <span className="text-[10px] text-slate-400 uppercase font-mono">
+                    <span className="text-[10px] text-slate-500 uppercase font-mono">
                       {file.category || 'media'}
                     </span>
                   </div>
@@ -142,7 +142,7 @@ export function FilesView({ activeTask }) {
                 <button
                   type="button"
                   onClick={() => setSelectedMedia(file)}
-                  className="p-2 rounded-xl bento-card text-cyan-cyber hover:text-white transition-colors spring-press border border-cyan-cyber/30 hover:border-cyan-cyber"
+                  className="p-2 rounded-xl bento-card text-cyan-700 hover:text-cyan-900 transition-colors spring-press border border-cyan-200"
                   title="Play"
                   aria-label="Play media"
                 >
@@ -152,7 +152,7 @@ export function FilesView({ activeTask }) {
                 <a
                   href={`/api/files/${file.file_id}/download`}
                   download={file.filename}
-                  className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold shadow-sm transition-all spring-press"
+                  className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-semibold shadow-sm transition-all spring-press"
                   title="Save to Phone / Device"
                   aria-label="Save to Phone"
                 >
@@ -163,12 +163,12 @@ export function FilesView({ activeTask }) {
                   type="button"
                   onClick={(e) => handleDelete(e, file.file_id)}
                   disabled={deletingId === file.file_id}
-                  className="p-2 rounded-xl bg-white/5 text-slate-400 hover:bg-crimson-tactical/20 hover:text-rose-300 border border-white/10 hover:border-crimson-tactical/40 transition-all spring-press"
+                  className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 hover:border-rose-300 transition-all spring-press"
                   title="Delete File"
                   aria-label="Delete File"
                 >
                   {deletingId === file.file_id ? (
-                    <Loader2 size={13} className="animate-spin text-rose-400" />
+                    <Loader2 size={13} className="animate-spin text-rose-500" />
                   ) : (
                     <Trash2 size={13} />
                   )}

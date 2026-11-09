@@ -71,10 +71,16 @@ def test_vault_api_device_pin_endpoints():
     assert res.status_code == 200
     assert res.json()["has_pin"] is False
 
-    # 2. Set new device pin
-    res = client.post("/api/vault/set-pin", json={"device_id": dev_id, "pin": "5555"})
+    # 2. Set new device pin using new_pin field (sent by frontend client)
+    res = client.post("/api/vault/set-pin", json={"device_id": dev_id, "new_pin": "5555"})
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
+
+    # Also verify pin key works
+    dev_id2 = f"test_dev_phone2_{uuid.uuid4()}"
+    res2 = client.post("/api/vault/set-pin", json={"device_id": dev_id2, "pin": "6666"})
+    assert res2.status_code == 200
+    assert res2.json()["status"] == "ok"
 
     # 3. Check pin status now reports True
     res = client.get("/api/vault/pin-status", headers={"X-Device-Id": dev_id})

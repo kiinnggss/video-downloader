@@ -8,93 +8,100 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+body {
+  margin: 0;
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
 @layer utilities {
-  /* Bento Studio Frosted Glass (Irma + Aveniq) */
+  /* Bento Studio Frosted Glass (Irma + Aveniq White Base) */
   .bento-card {
-    background: linear-gradient(145deg, rgba(16, 22, 44, 0.65) 0%, rgba(8, 12, 26, 0.85) 100%);
+    background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.9);
     box-shadow: 
-      0 20px 45px -12px rgba(0, 0, 0, 0.8),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+      0 12px 30px -10px rgba(15, 23, 42, 0.06),
+      0 4px 6px -2px rgba(15, 23, 42, 0.02),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
   }
 
   .bento-card-active {
-    background: linear-gradient(145deg, rgba(20, 30, 60, 0.75) 0%, rgba(10, 16, 36, 0.92) 100%);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(0, 240, 255, 0.35);
+    border: 1.5px solid rgba(0, 200, 225, 0.65);
     box-shadow: 
-      0 24px 50px -10px rgba(0, 0, 0, 0.85),
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.28),
-      0 0 30px -8px rgba(0, 240, 255, 0.25);
+      0 20px 40px -10px rgba(0, 200, 225, 0.16),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
   }
 
-  /* Sports Live Telemetry Card */
+  /* Sports Live Telemetry Card (Anchored Dark Telemetry Cockpit on White Canvas) */
   .bento-telemetry {
-    background: linear-gradient(145deg, rgba(12, 18, 32, 0.88) 0%, rgba(6, 9, 20, 0.96) 100%);
+    background: linear-gradient(145deg, rgba(12, 18, 34, 0.96) 0%, rgba(6, 9, 20, 0.98) 100%);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(204, 255, 0, 0.25);
+    border: 1px solid rgba(204, 255, 0, 0.4);
     box-shadow: 
-      0 24px 50px -10px rgba(0, 0, 0, 0.9),
+      0 20px 45px -10px rgba(15, 23, 42, 0.35),
       inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
-      0 0 35px -10px rgba(204, 255, 0, 0.18);
+      0 0 30px -10px rgba(204, 255, 0, 0.2);
   }
 
-  /* Command Bar Input (Aveniq) */
+  /* Command Bar Input (Aveniq White Frosted Bar) */
   .bento-command-bar {
-    background: rgba(10, 15, 30, 0.78);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.95);
     box-shadow: 
-      0 12px 30px -8px rgba(0, 0, 0, 0.7),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+      0 10px 25px -8px rgba(15, 23, 42, 0.06),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
   }
 
   /* Backward compatible glass classes */
   .glass-cyber {
-    background: linear-gradient(145deg, rgba(16, 22, 44, 0.65) 0%, rgba(8, 12, 26, 0.85) 100%);
+    background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.9);
     box-shadow: 
-      0 20px 45px -12px rgba(0, 0, 0, 0.8),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
+      0 12px 30px -10px rgba(15, 23, 42, 0.06),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
   }
 
   .glass-cyber-active {
-    background: linear-gradient(145deg, rgba(20, 30, 60, 0.75) 0%, rgba(10, 16, 36, 0.92) 100%);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(0, 240, 255, 0.35);
+    border: 1.5px solid rgba(0, 200, 225, 0.65);
+    box-shadow: 0 20px 40px -10px rgba(0, 200, 225, 0.16);
   }
 
   .glass-cyber-subtle {
-    background: rgba(10, 15, 32, 0.55);
+    background: rgba(248, 250, 252, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(226, 232, 240, 0.8);
   }
 
   .glass-cyber-input {
-    background: rgba(8, 12, 26, 0.8);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(226, 232, 240, 0.9);
   }
 
   /* Bottom Navigation Dock */
   .glass-dock {
-    background: linear-gradient(180deg, rgba(10, 15, 32, 0.9) 0%, rgba(4, 7, 18, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(9, 14, 26, 0.98) 100%);
     backdrop-filter: blur(32px);
     -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 
-      0 20px 45px -10px rgba(0, 0, 0, 0.9),
+      0 20px 45px -10px rgba(15, 23, 42, 0.35),
       inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
   }
 
@@ -110,11 +117,11 @@
 
   /* Ambient dual-bloom background */
   .cyber-mesh-bg {
-    background-color: #04060d;
+    background-color: #f8fafc;
     background-image: 
-      radial-gradient(circle at 10% 10%, rgba(204, 255, 0, 0.08) 0%, transparent 45%),
-      radial-gradient(circle at 90% 20%, rgba(0, 240, 255, 0.14) 0%, transparent 45%),
-      radial-gradient(circle at 50% 85%, rgba(99, 102, 241, 0.12) 0%, transparent 50%);
+      radial-gradient(circle at 10% 8%, rgba(204, 255, 0, 0.16) 0%, transparent 45%),
+      radial-gradient(circle at 90% 12%, rgba(0, 210, 235, 0.16) 0%, transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
     background-attachment: fixed;
   }
 }

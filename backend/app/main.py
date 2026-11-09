@@ -262,7 +262,7 @@ def configure_vault_pin(
     x_device_id: Optional[str] = Header(None, alias="X-Device-Id")
 ):
     dev = payload.get("device_id") or x_device_id or "default"
-    new_pin = str(payload.get("pin", "")).strip()
+    new_pin = str(payload.get("new_pin") or payload.get("pin") or "").strip()
     current_pin = payload.get("current_pin")
     if not new_pin or len(new_pin) < 4:
         raise HTTPException(status_code=400, detail="PIN must be at least 4 digits")

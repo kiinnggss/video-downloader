@@ -169,6 +169,8 @@ export const apiClient = {
   },
 
   async setVaultPin(newPin, currentPin = null) {
+    const cleanNewPin = String(newPin || '').trim();
+    const cleanCurrentPin = currentPin ? String(currentPin).trim() : null;
     const res = await fetch('/api/vault/set-pin', {
       method: 'POST',
       headers: {
@@ -176,8 +178,9 @@ export const apiClient = {
         'X-Device-Id': getDeviceId(),
       },
       body: JSON.stringify({
-        new_pin: newPin,
-        current_pin: currentPin,
+        pin: cleanNewPin,
+        new_pin: cleanNewPin,
+        current_pin: cleanCurrentPin,
       }),
     });
     if (!res.ok) {

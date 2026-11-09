@@ -67,9 +67,9 @@ export function CookieSettingsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
       <div 
-        className="relative w-full max-w-md crystal-card rounded-3xl p-6 shadow-2xl shadow-black/20 border border-white/20 bg-slate-900/90 text-white flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-md bento-card rounded-3xl p-6 shadow-2xl border border-slate-200 text-slate-950 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cookie-settings-title"
@@ -77,14 +77,14 @@ export function CookieSettingsModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-amber-400/20 text-amber-400">
+            <div className="p-2 rounded-2xl bg-amber-100 text-amber-700 border border-amber-200">
               <Key size={18} />
             </div>
             <div>
-              <h2 id="cookie-settings-title" className="text-base font-semibold text-white">
+              <h2 id="cookie-settings-title" className="text-base font-bold text-slate-950">
                 Account & Cookies
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Unlock age-restricted and private streams
               </p>
             </div>
@@ -92,7 +92,7 @@ export function CookieSettingsModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
             aria-label="Close dialog"
           >
             <X size={18} />
@@ -100,27 +100,27 @@ export function CookieSettingsModal({ isOpen, onClose }) {
         </div>
 
         {/* Status Pill */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-xs">
-          <span className="text-slate-300">Device Session:</span>
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-slate-100 border border-slate-200 text-xs">
+          <span className="text-slate-600 font-medium">Device Session:</span>
           {hasCookies ? (
-            <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+            <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
               <CheckCircle2 size={14} /> Active
             </span>
           ) : (
-            <span className="text-slate-400 font-medium">
+            <span className="text-slate-500 font-medium">
               None configured
             </span>
           )}
         </div>
 
         {/* Explainer */}
-        <p className="text-xs text-slate-300 leading-relaxed">
+        <p className="text-xs text-slate-600 leading-relaxed">
           Public videos work automatically with built-in TLS browser emulation. If a video requires account access on YouTube, TikTok, or X, export your cookies in Netscape format and paste them below.
         </p>
 
         {/* Cookie Input */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="cookie-input" className="text-[11px] font-medium text-slate-400">
+          <label htmlFor="cookie-input" className="text-[11px] font-medium text-slate-600">
             Netscape Cookies text
           </label>
           <textarea
@@ -129,20 +129,20 @@ export function CookieSettingsModal({ isOpen, onClose }) {
             value={cookieContent}
             onChange={(e) => setCookieContent(e.target.value)}
             placeholder="# Netscape HTTP Cookie File&#10;.youtube.com TRUE / TRUE 1790000000 SID ..."
-            className="w-full rounded-2xl bg-black/40 border border-white/10 px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-400/50 resize-none"
+            className="w-full rounded-2xl bg-white border border-slate-200 p-3 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm resize-none"
           />
         </div>
 
         {/* Notifications */}
         {statusMsg && (
-          <div className="px-3 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
             <CheckCircle2 size={14} className="flex-shrink-0" />
             <span>{statusMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="px-3 py-2 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <div className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
             <AlertCircle size={14} className="flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -154,9 +154,9 @@ export function CookieSettingsModal({ isOpen, onClose }) {
             type="button"
             onClick={handleSave}
             disabled={loading || !cookieContent.trim()}
-            className="flex-1 py-2.5 px-4 rounded-full bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-slate-950 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-md"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-lime-neon hover:bg-lime-400 disabled:opacity-30 text-obsidian text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm spring-press"
           >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+            {loading ? <Loader2 size={14} className="animate-spin text-obsidian" /> : <ShieldCheck size={14} />}
             <span>Save Cookies</span>
           </button>
 
@@ -165,7 +165,7 @@ export function CookieSettingsModal({ isOpen, onClose }) {
               type="button"
               onClick={handleClear}
               disabled={loading}
-              className="py-2.5 px-3.5 rounded-full bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 text-slate-300 text-xs font-medium transition-all flex items-center justify-center gap-1"
+              className="py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1 spring-press"
               title="Remove stored cookies"
             >
               <Trash2 size={14} />
@@ -177,3 +177,5 @@ export function CookieSettingsModal({ isOpen, onClose }) {
     </div>
   );
 }
+
+export default CookieSettingsModal;
