@@ -94,15 +94,18 @@ body {
     border: 1px solid rgba(226, 232, 240, 0.9);
   }
 
-  /* Bottom Navigation Dock */
+  /* Bottom Navigation Bubble Dock */
   .glass-dock {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(9, 14, 26, 0.98) 100%);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
     box-shadow: 
-      0 20px 45px -10px rgba(15, 23, 42, 0.35),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+      0 20px 50px -12px rgba(15, 23, 42, 0.18),
+      0 8px 24px -4px rgba(15, 23, 42, 0.08),
+      0 2px 6px 0 rgba(15, 23, 42, 0.04),
+      inset 0 2px 2px 0 rgba(255, 255, 255, 1),
+      inset 0 -2px 4px 0 rgba(15, 23, 42, 0.03);
   }
 
   /* Tactile Floating Active Bubble */
