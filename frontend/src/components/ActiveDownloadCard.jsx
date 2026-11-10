@@ -49,14 +49,14 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
 
   if (isCancelled) {
     return (
-      <div className="bento-card rounded-3xl p-4 border border-crimson-tactical/30 animate-fade-in flex items-center justify-between">
+      <div className="bento-card rounded-3xl p-4 border border-rose-200 animate-fade-in flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-crimson-tactical/15 text-rose-400 border border-crimson-tactical/30">
+          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
             <X size={17} />
           </div>
           <div>
-            <h4 className="font-bold text-sm text-white">Transfer Terminated</h4>
-            <span className="text-[11px] text-slate-400 font-mono truncate max-w-[200px] block">
+            <h4 className="font-bold text-sm text-slate-950">Transfer Cancelled</h4>
+            <span className="text-[11px] text-slate-500 font-mono truncate max-w-[220px] block">
               {task.title}
             </span>
           </div>

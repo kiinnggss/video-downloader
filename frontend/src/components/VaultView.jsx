@@ -284,15 +284,15 @@ export function VaultView() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-black text-slate-950 tracking-tight uppercase font-mono">
+            <h1 className="text-lg font-extrabold text-slate-950 tracking-tight">
               Private Vault
             </h1>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-              {token ? 'SECURED & OPEN' : 'ENCRYPTED'}
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+              {token ? 'UNLOCKED' : 'PIN LOCKED'}
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium pt-0.5">
-            Hardware-isolated local storage with VLC streaming
+            Local device media storage with VLC playlist export
           </p>
         </div>
 
@@ -339,17 +339,17 @@ export function VaultView() {
       {!token && !hasPinConfigured ? (
         <form
           onSubmit={handleInitialPinSetup}
-          className="flex flex-col items-center justify-center my-auto bento-card rounded-3xl p-7 gap-5 text-center border border-amber-300 shadow-xl"
+          className="flex flex-col items-center justify-center my-auto bento-card rounded-3xl p-7 gap-5 text-center border border-amber-200/90 shadow-lg"
         >
-          <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center shadow-inner">
-            <Key size={26} className="drop-shadow-sm" />
+          <div className="w-14 h-14 rounded-2xl bg-slate-950 text-amber-400 border border-slate-800 flex items-center justify-center shadow-md">
+            <Key size={24} />
           </div>
           <div className="flex flex-col gap-1">
-            <h3 className="font-mono font-black text-slate-950 text-base uppercase tracking-tight">
+            <h3 className="font-extrabold text-slate-950 text-base tracking-tight">
               Create Device PIN
             </h3>
-            <p className="text-xs text-slate-500 max-w-xs">
-              This device does not have a PIN yet. Choose a secure 4-digit PIN for this device.
+            <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+              Choose a 4 to 6 digit PIN to lock and protect private media on this device.
             </p>
           </div>
 
@@ -361,8 +361,8 @@ export function VaultView() {
               maxLength={6}
               value={setupPin}
               onChange={(e) => setSetupPin(e.target.value)}
-              placeholder="Enter PIN (e.g. 1234)"
-              className="w-full text-center tracking-widest text-xl font-mono py-2.5 rounded-xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+              placeholder="Enter 4 to 6 digit PIN"
+              className="w-full text-center tracking-[0.35em] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans placeholder:font-medium placeholder:text-slate-400 text-lg font-mono font-bold py-3 px-4 rounded-2xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15"
             />
             <input
               type="password"
@@ -371,17 +371,21 @@ export function VaultView() {
               maxLength={6}
               value={setupConfirmPin}
               onChange={(e) => setSetupConfirmPin(e.target.value)}
-              placeholder="Confirm PIN"
-              className="w-full text-center tracking-widest text-xl font-mono py-2.5 rounded-xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+              placeholder="Confirm your PIN"
+              className="w-full text-center tracking-[0.35em] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans placeholder:font-medium placeholder:text-slate-400 text-lg font-mono font-bold py-3 px-4 rounded-2xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || !setupPin || !setupConfirmPin}
-            className="w-full py-3 rounded-xl bg-amber-vault hover:bg-amber-400 disabled:opacity-30 text-obsidian font-mono font-black text-xs uppercase tracking-wider shadow-sm transition-all spring-press"
+            className="w-full py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:border disabled:border-slate-200/90 disabled:shadow-none text-amber-400 font-bold text-xs uppercase tracking-wider shadow-md transition-all spring-press"
           >
-            {loading ? <Loader2 size={14} className="animate-spin mx-auto text-obsidian" /> : 'Set Device PIN & Unlock'}
+            {loading ? (
+              <Loader2 size={15} className="animate-spin mx-auto text-amber-400" />
+            ) : (
+              'Set Device PIN & Unlock'
+            )}
           </button>
         </form>
       ) : null}
@@ -390,16 +394,18 @@ export function VaultView() {
       {!token && hasPinConfigured ? (
         <form
           onSubmit={handleUnlock}
-          className="flex flex-col items-center justify-center my-auto bento-card rounded-3xl p-8 gap-5 text-center border border-amber-300 shadow-xl"
+          className="flex flex-col items-center justify-center my-auto bento-card rounded-3xl p-8 gap-5 text-center border border-amber-200/90 shadow-lg"
         >
-          <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center shadow-inner">
-            <Lock size={26} className="drop-shadow-sm" />
+          <div className="w-14 h-14 rounded-2xl bg-slate-950 text-amber-400 border border-slate-800 flex items-center justify-center shadow-md">
+            <Lock size={24} />
           </div>
           <div>
-            <h3 className="font-mono font-black text-slate-950 text-base uppercase tracking-tight">
+            <h3 className="font-extrabold text-slate-950 text-base tracking-tight">
               Enter Device PIN
             </h3>
-            <p className="text-xs text-slate-500 mt-1">Unlock your encrypted vault items</p>
+            <p className="text-xs text-slate-500 mt-1">
+              Unlock your private media vault on this device
+            </p>
           </div>
 
           <input
@@ -409,16 +415,20 @@ export function VaultView() {
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            placeholder="••••"
-            className="w-44 text-center tracking-widest text-2xl font-mono py-2.5 rounded-2xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+            placeholder="Enter PIN"
+            className="w-52 text-center tracking-[0.4em] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans placeholder:font-medium placeholder:text-slate-400 text-xl font-mono font-bold py-3 px-4 rounded-2xl bento-command-bar border border-slate-200 text-slate-950 focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15"
           />
 
           <button
             type="submit"
             disabled={loading || !pin}
-            className="w-full py-3.5 rounded-xl bg-amber-vault hover:bg-amber-400 disabled:opacity-30 text-obsidian font-mono font-black text-xs uppercase tracking-wider shadow-sm transition-all spring-press"
+            className="w-full py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:border disabled:border-slate-200/90 disabled:shadow-none text-amber-400 font-bold text-xs uppercase tracking-wider shadow-md transition-all spring-press"
           >
-            {loading ? <Loader2 size={14} className="animate-spin mx-auto text-obsidian" /> : 'Unlock Vault'}
+            {loading ? (
+              <Loader2 size={15} className="animate-spin mx-auto text-amber-400" />
+            ) : (
+              'Unlock Vault'
+            )}
           </button>
         </form>
       ) : null}
@@ -441,9 +451,9 @@ export function VaultView() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-vault hover:bg-amber-400 text-obsidian font-mono font-bold text-xs uppercase tracking-wider shadow-sm spring-press"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-amber-400 font-bold text-xs tracking-wide shadow-sm spring-press"
               >
-                <Plus size={14} strokeWidth={2.5} />
+                <Plus size={14} strokeWidth={2.6} />
                 <span>Import Local Media</span>
               </button>
             </div>

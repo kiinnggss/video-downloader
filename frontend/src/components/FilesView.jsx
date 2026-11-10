@@ -46,10 +46,10 @@ export function FilesView({ activeTask }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-black text-slate-950 tracking-tight uppercase font-mono">
+            <h1 className="text-lg font-extrabold text-slate-950 tracking-tight">
               Media Library
             </h1>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
               {files.length} ITEMS
             </span>
           </div>
@@ -60,7 +60,7 @@ export function FilesView({ activeTask }) {
       </div>
 
       {/* Segmented Bento Capsules */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200/90">
+      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-200/70 border border-slate-200/90">
         {[
           { id: 'all', label: 'All Media' },
           { id: 'video', label: 'Videos' },
@@ -70,10 +70,10 @@ export function FilesView({ activeTask }) {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all spring-press ${
+            className={`py-2 rounded-xl text-xs font-bold capitalize transition-all spring-press ${
               tab === t.id
-                ? 'bg-cyan-600 text-white shadow-sm border border-cyan-700'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-950 shadow-sm border border-slate-200/90'
+                : 'text-slate-600 hover:text-slate-950'
             }`}
           >
             {t.label}

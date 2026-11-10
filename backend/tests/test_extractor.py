@@ -182,3 +182,108 @@ def test_extract_video_info_fallback_on_ad_page():
         assert res.formats[0].resolution == "720p"
 
 
+def test_discover_escaped_js_and_dash_streams():
+    from app.services.patches import discover_media_from_page
+
+    mock_html = r"""
+    <html>
+    <head>
+        <meta content="https://example.com/poster.jpg" property="og:image" />
+        <meta content="Escaped Stream Video" property="og:title" />
+    </head>
+    <body>
+        <script>
+            window.__PLAYER_CONFIG__ = {
+                "dashUrl": "https:\/\/cdn.example.com\/dash\/manifest.mpd\u003ftoken\u003dxyz\u0026exp\u003d999",
+                "backup": "\/media\/fallback.webm"
+            };
+        </script>
+    </body>
+    </html>
+    """
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = mock_html
+    mock_resp.url = "https://example.com/watch/escaped"
+
+    with patch("httpx.Client.get", return_value=mock_resp):
+        res = discover_media_from_page("https://example.com/watch/escaped")
+        assert res is not None
+        assert res["title"] == "Escaped Stream Video"
+        assert res["thumbnail"] == "https://example.com/poster.jpg"
+        assert res["stream_url"] == "https://cdn.example.com/dash/manifest.mpd?token=xyz&exp=999"
+        assert "https://example.com/media/fallback.webm" in res["candidate_streams"]
+
+
+def test_discover_base64_and_lazy_data_attributes():
+    import base64
+    from app.services.patches import discover_media_from_page
+
+    b64_stream = base64.b64encode(b"https://cdn.example.com/secret/master.m3u8").decode("utf-8")
+    mock_html = f"""
+    <html>
+    <head><title>Base64 Video</title></head>
+    <body>
+        <div class="player" data-video-src="/local/clip.mov"></div>
+        <script>
+            const src = atob("{b64_stream}");
+        </script>
+    </body>
+    </html>
+    """
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = mock_html
+    mock_resp.url = "https://example.com/b64"
+
+    with patch("httpx.Client.get", return_value=mock_resp):
+        res = discover_media_from_page("https://example.com/b64")
+        assert res is not None
+        assert res["stream_url"] == "https://cdn.example.com/secret/master.m3u8"
+        assert "https://example.com/local/clip.mov" in res["candidate_streams"]
+
+
+def test_discover_nested_iframe_embed():
+    from app.services.patches import discover_media_from_page
+
+    parent_html = """
+    <html>
+    <head>
+        <title>Parent Page Title</title>
+        <meta property="og:image" content="/images/parent-thumb.jpg" />
+    </head>
+    <body>
+        <iframe src="https://googleads.g.doubleclick.net/pagead/ads"></iframe>
+        <iframe data-src="/embed/player-42"></iframe>
+    </body>
+    </html>
+    """
+    iframe_html = """
+    <html>
+    <body>
+        <script>
+            jwplayer("v").setup({ file: "https://edge.example.com/live/index.m3u8" });
+        </script>
+    </body>
+    </html>
+    """
+    resp_parent = MagicMock()
+    resp_parent.status_code = 200
+    resp_parent.text = parent_html
+    resp_parent.url = "https://example.com/article/video"
+
+    resp_iframe = MagicMock()
+    resp_iframe.status_code = 200
+    resp_iframe.text = iframe_html
+    resp_iframe.url = "https://example.com/embed/player-42"
+
+    with patch("httpx.Client.get", side_effect=[resp_parent, resp_iframe]):
+        res = discover_media_from_page("https://example.com/article/video")
+        assert res is not None
+        assert res["stream_url"] == "https://edge.example.com/live/index.m3u8"
+        assert res["title"] == "Parent Page Title"
+        assert res["thumbnail"] == "https://example.com/images/parent-thumb.jpg"
+        assert res["headers"]["Referer"] == "https://example.com/embed/player-42"
+
+
+

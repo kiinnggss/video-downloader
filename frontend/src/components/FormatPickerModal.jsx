@@ -180,20 +180,20 @@ export function FormatPickerModal({ inspectData, isOpen, onClose, onConfirm }) {
         <button
           type="button"
           onClick={handleSubmit}
-          className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 spring-press ${
+          className={`w-full py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 spring-press ${
             inVault
-              ? 'bg-amber-vault hover:bg-amber-400 text-obsidian shadow-sm'
-              : 'bg-lime-neon hover:bg-lime-400 text-obsidian shadow-sm'
+              ? 'bg-slate-950 hover:bg-slate-800 text-amber-400'
+              : 'bg-slate-950 hover:bg-slate-800 text-white'
           }`}
         >
           {inVault ? (
             <>
-              <Lock size={15} strokeWidth={2.8} />
+              <Lock size={15} className="text-amber-400" strokeWidth={2.6} />
               <span>Save to Private Vault</span>
             </>
           ) : (
             <>
-              <Download size={15} strokeWidth={2.8} />
+              <Download size={15} className="text-lime-neon" strokeWidth={2.6} />
               <span>Start Download</span>
             </>
           )}

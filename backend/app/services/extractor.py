@@ -11,11 +11,16 @@ def probe_format_size(vf: Dict[str, Any], duration: int = 0) -> Optional[int]:
 
     stream_url = str(vf.get("url") or "")
     proto = str(vf.get("protocol") or "").lower()
-    is_hls = ".m3u8" in stream_url.lower() or "m3u8" in proto
+    is_adaptive = (
+        ".m3u8" in stream_url.lower()
+        or "m3u8" in proto
+        or ".mpd" in stream_url.lower()
+        or "dash" in proto
+    )
 
-    # For HLS streams, HEAD requests return the size of the playlist text file.
+    # For HLS and DASH manifests, HEAD requests return the size of the playlist/manifest file.
     # Compute size from the manifest bitrate and video duration instead.
-    if is_hls and duration and duration > 0:
+    if is_adaptive and duration and duration > 0:
         tbr = vf.get("tbr") or (vf.get("vbr") or 0) + (vf.get("abr") or 0)
         if tbr and float(tbr) > 0:
             return int((float(tbr) * 1000 / 8) * duration)
@@ -23,7 +28,7 @@ def probe_format_size(vf: Dict[str, Any], duration: int = 0) -> Optional[int]:
         bitrate_kbps = 3500 if height >= 1080 else (1800 if height >= 720 else (1000 if height >= 480 else (650 if height >= 360 else 450)))
         return int((bitrate_kbps * 1000 / 8) * duration)
 
-    if stream_url.startswith("http") and not is_hls:
+    if stream_url.startswith("http") and not is_adaptive:
         headers = vf.get("http_headers") or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
@@ -190,22 +195,23 @@ def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResp
     except Exception as primary_err:
         discovered = discover_media_from_page(target_url)
         if discovered and discovered.get("stream_url"):
-            stream_url = discovered["stream_url"]
+            candidates = discovered.get("candidate_streams") or [discovered["stream_url"]]
             stream_opts = dict(ydl_opts)
             stream_opts["http_headers"] = discovered.get("headers", ydl_opts["http_headers"])
-            try:
-                with yt_dlp.YoutubeDL(stream_opts) as ydl_stream:
-                    info = ydl_stream.extract_info(stream_url, download=False)
-                    if info:
-                        if not info.get("title") or info.get("title") == "master":
-                            info["title"] = discovered.get("title") or info.get("title")
-                        if not info.get("thumbnail"):
-                            info["thumbnail"] = discovered.get("thumbnail") or ""
-                        if not info.get("duration") and discovered.get("duration"):
-                            info["duration"] = discovered["duration"]
-                        if not info.get("webpage_url"):
-                            info["webpage_url"] = target_url
-                        return parse_raw_info(info)
-            except Exception:
-                pass
+            for stream_url in candidates:
+                try:
+                    with yt_dlp.YoutubeDL(stream_opts) as ydl_stream:
+                        info = ydl_stream.extract_info(stream_url, download=False)
+                        if info:
+                            if not info.get("title") or info.get("title") in ("master", "index", "playlist"):
+                                info["title"] = discovered.get("title") or info.get("title")
+                            if not info.get("thumbnail"):
+                                info["thumbnail"] = discovered.get("thumbnail") or ""
+                            if not info.get("duration") and discovered.get("duration"):
+                                info["duration"] = discovered["duration"]
+                            if not info.get("webpage_url"):
+                                info["webpage_url"] = target_url
+                            return parse_raw_info(info)
+                except Exception:
+                    continue
         raise primary_err

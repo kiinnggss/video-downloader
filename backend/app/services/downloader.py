@@ -268,15 +268,25 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         except Exception as dl_err:
             discovered = discover_media_from_page(req.url)
             if discovered and discovered.get("stream_url"):
-                stream_url = discovered["stream_url"]
+                candidates = discovered.get("candidate_streams") or [discovered["stream_url"]]
                 ydl_opts["http_headers"] = discovered.get("headers", ydl_opts.get("http_headers", {}))
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(stream_url, download=True) or {}
-                    filename = ydl.prepare_filename(info)
-                    if not info.get("title") or info.get("title") == "master":
-                        info["title"] = discovered.get("title") or "Downloaded Video"
-                    if not info.get("thumbnail"):
-                        info["thumbnail"] = discovered.get("thumbnail")
+                last_sub_err = dl_err
+                for stream_url in candidates:
+                    try:
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                            info = ydl.extract_info(stream_url, download=True) or {}
+                            filename = ydl.prepare_filename(info)
+                            if not info.get("title") or info.get("title") in ("master", "index", "playlist"):
+                                info["title"] = discovered.get("title") or "Downloaded Video"
+                            if not info.get("thumbnail"):
+                                info["thumbnail"] = discovered.get("thumbnail")
+                            last_sub_err = None
+                            break
+                    except Exception as sub_err:
+                        last_sub_err = sub_err
+                        continue
+                if last_sub_err is not None:
+                    raise last_sub_err
             else:
                 raise dl_err
 
