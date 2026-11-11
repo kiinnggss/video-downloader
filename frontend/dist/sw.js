@@ -1,19 +1,46 @@
-const CACHE_NAME = 'crystal-cache-v3';
+const CACHE_NAME = 'crystal-cache-v4';
+let swKeepAliveTimer = null;
 
-self.addEventListener('install', (event) => {
+function pingServerKeepAlive() {
+  const ts = Date.now();
+  fetch(`/api/keepalive?sw=${ts}`, {
+    method: 'GET',
+    cache: 'no-store',
+  }).catch(() => {});
+}
+
+function startSwKeepAliveLoop() {
+  if (swKeepAliveTimer) return;
+  pingServerKeepAlive();
+  swKeepAliveTimer = setInterval(pingServerKeepAlive, 20000);
+}
+
+self.addEventListener('install', () => {
   self.skipWaiting();
+  startSwKeepAliveLoop();
 });
 
 self.addEventListener('activate', (event) => {
+  startSwKeepAliveLoop();
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) return caches.delete(key);
+          })
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'PING_KEEPALIVE') {
+    startSwKeepAliveLoop();
+    pingServerKeepAlive();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -22,7 +49,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Network-first for HTML navigation requests
-  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+  if (
+    event.request.mode === 'navigate' ||
+    event.request.headers.get('accept')?.includes('text/html')
+  ) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -40,13 +70,15 @@ self.addEventListener('fetch', (event) => {
   // Stale-while-revalidate for static assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return networkResponse;
-      }).catch(() => cached);
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => cached);
       return cached || fetchPromise;
     })
   );

@@ -244,9 +244,28 @@ export const apiClient = {
 
   async pingKeepAlive() {
     try {
-      const res = await fetch('/api/keepalive');
+      const ts = Date.now();
+      const res = await fetch(`/api/keepalive?t=${ts}`, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'X-Device-Id': getDeviceId(),
+        },
+      });
+      if (res.status === 502 || res.status === 503) {
+        fetch('https://snapdeploy.dev/api/public/wake/video-downloader-7e07c', {
+          method: 'POST',
+          mode: 'no-cors',
+        }).catch(() => {});
+        return false;
+      }
       return res.ok;
     } catch {
+      fetch('https://snapdeploy.dev/api/public/wake/video-downloader-7e07c', {
+        method: 'POST',
+        mode: 'no-cors',
+      }).catch(() => {});
       return false;
     }
   }

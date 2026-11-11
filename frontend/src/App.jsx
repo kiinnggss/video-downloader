@@ -30,13 +30,34 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
-  // Keep-alive heartbeat: ping every 25 seconds to prevent serverless container from sleeping
+  // Keep-alive heartbeat: ping every 15 seconds and on tab focus/visibility/network events
   useEffect(() => {
-    apiClient.pingKeepAlive();
-    const interval = setInterval(() => {
+    const sendHeartbeat = () => {
       apiClient.pingKeepAlive();
-    }, 25000);
-    return () => clearInterval(interval);
+      if (typeof navigator !== 'undefined' && navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'PING_KEEPALIVE' });
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 15000);
+
+    const handleVisibilityOrFocus = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('online', sendHeartbeat);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('online', sendHeartbeat);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+    };
   }, []);
 
   // Screen Wake Lock: keep mobile screen awake while downloading

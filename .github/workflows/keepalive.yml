@@ -1,0 +1,23 @@
+name: Container Keep-Alive Ping
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake and ping SnapDeploy container
+        run: |
+          curl -s -X POST "https://snapdeploy.dev/api/public/wake/video-downloader-7e07c" || true
+          for i in {1..10}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "https://video-downloader-7e07c.containers.snapdeploy.app/api/keepalive?t=$(date +%s)")
+            echo "Ping attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then
+              curl -s "https://video-downloader-7e07c.containers.snapdeploy.app/healthz"
+              exit 0
+            fi
+            sleep 4
+          done
