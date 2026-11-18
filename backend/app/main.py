@@ -34,6 +34,8 @@ from app.db import (
     get_media_file,
     save_media_file,
     delete_media_file,
+    list_tasks,
+    move_media_to_vault,
 )
 from app.config import VAULT_STORAGE, PUBLIC_STORAGE
 
@@ -41,9 +43,10 @@ import asyncio
 import time
 import httpx
 
-PUBLIC_APP_URL = os.getenv(
-    "PUBLIC_APP_URL",
-    "https://video-downloader-7e07c.containers.snapdeploy.app",
+PUBLIC_APP_URL = (
+    os.getenv("PUBLIC_APP_URL")
+    or os.getenv("RENDER_EXTERNAL_URL")
+    or "https://video-downloader-7e07c.containers.snapdeploy.app"
 ).rstrip("/")
 SNAPDEPLOY_WAKE_URL = os.getenv(
     "SNAPDEPLOY_WAKE_URL",
@@ -66,7 +69,8 @@ async def _keep_container_awake_loop():
             async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=headers) as client:
                 await client.get(f"{PUBLIC_APP_URL}/api/keepalive?t={ts}")
                 await client.get(f"{PUBLIC_APP_URL}/healthz?t={ts}")
-                await client.post(SNAPDEPLOY_WAKE_URL)
+                if "snapdeploy.app" in PUBLIC_APP_URL and SNAPDEPLOY_WAKE_URL:
+                    await client.post(SNAPDEPLOY_WAKE_URL)
             _last_ping_ts = ts
         except asyncio.CancelledError:
             break
@@ -129,6 +133,15 @@ def inspect_url(req: InspectRequest, x_device_id: Optional[str] = Header(None, a
         if "drm" in err_msg.lower() or "widevine" in err_msg.lower() or "encrypted" in err_msg.lower():
             raise HTTPException(status_code=403, detail="Stream is DRM-protected and cannot be extracted")
         raise HTTPException(status_code=422, detail=f"Failed to inspect URL: {err_msg}")
+
+
+@app.get("/api/downloads")
+def get_downloads_history(
+    device_id: Optional[str] = Query(None),
+    x_device_id: Optional[str] = Header(None, alias="X-Device-Id"),
+):
+    target_device = device_id or x_device_id
+    return list_tasks(device_id=target_device, limit=25)
 
 
 @app.post("/api/downloads")
@@ -298,6 +311,29 @@ def delete_file(
             pass
     delete_media_file(file_id)
     return {"status": "ok", "deleted_file_id": file_id}
+
+
+@app.post("/api/files/{file_id}/move-to-vault")
+def move_file_to_vault_endpoint(file_id: str):
+    import shutil
+    media = get_media_file(file_id)
+    if not media:
+        raise HTTPException(status_code=404, detail="File not found")
+    if media.in_vault:
+        return media
+
+    VAULT_STORAGE.mkdir(parents=True, exist_ok=True)
+    new_filepath = media.filepath
+    if media.filepath and os.path.exists(media.filepath):
+        dest = str(VAULT_STORAGE / f"{media.file_id}_{media.filename}")
+        try:
+            shutil.move(media.filepath, dest)
+            new_filepath = dest
+        except Exception:
+            pass
+
+    updated = move_media_to_vault(file_id, new_filepath=new_filepath)
+    return updated
 
 
 @app.get("/api/vault/pin-status")

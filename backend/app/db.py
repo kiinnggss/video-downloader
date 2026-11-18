@@ -193,3 +193,55 @@ def delete_media_file(file_id: str, db_path: str = None) -> bool:
         deleted = cursor.rowcount > 0
     conn.close()
     return deleted
+
+
+def list_tasks(device_id: Optional[str] = None, limit: int = 20, db_path: str = None) -> List[DownloadTask]:
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    query = "SELECT * FROM tasks"
+    params: list = []
+    if device_id:
+        query += " WHERE device_id = ?"
+        params.append(device_id)
+    query += " ORDER BY rowid DESC LIMIT ?"
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    results: List[DownloadTask] = []
+    for row in rows:
+        keys = row.keys()
+        results.append(
+            DownloadTask(
+                task_id=row["task_id"],
+                url=row["url"],
+                title=row["title"],
+                status=row["status"],
+                progress=row["progress"],
+                speed=row["speed"],
+                downloaded_bytes=row["downloaded_bytes"],
+                total_bytes=row["total_bytes"],
+                eta_seconds=row["eta_seconds"],
+                in_vault=bool(row["in_vault"]),
+                file_id=row["file_id"] if "file_id" in keys else None,
+                filename=row["filename"] if "filename" in keys else None,
+                device_id=row["device_id"] if "device_id" in keys else None,
+            )
+        )
+    return results
+
+
+def move_media_to_vault(file_id: str, new_filepath: Optional[str] = None, db_path: str = None) -> Optional[MediaFile]:
+    media = get_media_file(file_id, db_path=db_path)
+    if not media:
+        return None
+    updated_path = new_filepath or media.filepath
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute(
+            "UPDATE media_files SET in_vault = 1, filepath = ? WHERE file_id = ?",
+            (updated_path, file_id),
+        )
+    conn.close()
+    return get_media_file(file_id, db_path=db_path)
+
