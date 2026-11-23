@@ -41,56 +41,58 @@ export function MiniDownloadBanner({ task, onOpenDownloads }) {
     <div className="fixed bottom-24 left-4 right-4 z-30 flex justify-center pointer-events-none">
       <div
         onClick={onOpenDownloads}
-        className="w-full max-w-sm bento-telemetry rounded-2xl p-2.5 px-3.5 border border-lime-neon/30 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in hover:border-lime-neon/60 transition-all shadow-lime-glow spring-press"
+        className="w-full max-w-sm surface-card-active rounded-2xl p-2.5 px-3.5 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in spring-press"
         title="Tap to inspect active download"
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* Radar indicator */}
           <div
-            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border ${
-              isPaused
-                ? 'bg-amber-vault/20 text-amber-vault border-amber-vault/30'
-                : 'bg-lime-neon/15 text-lime-neon border-lime-neon/40 shadow-inner'
-            }`}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              backgroundColor: isPaused ? 'var(--accent-vault-soft)' : 'var(--accent-soft)',
+              color: isPaused ? 'var(--accent-vault-text)' : 'var(--accent-text)',
+            }}
           >
             <ArrowDownCircle size={16} className={isPaused ? '' : 'animate-pulse'} />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <h5 className="text-xs font-bold text-white truncate">
+              <h5 className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
                 {task.title || 'Downloading stream...'}
               </h5>
-              <span className="text-[11px] font-mono font-black text-lime-neon flex-shrink-0">
+              <span
+                className="text-[11px] font-mono font-black flex-shrink-0"
+                style={{ color: isPaused ? 'var(--accent-vault-text)' : 'var(--accent-text)' }}
+              >
                 {task.progress}%
               </span>
             </div>
 
-            {/* Segmented mini progress */}
-            <div className="w-full h-1.5 rounded-full bg-obsidian-base border border-white/10 overflow-hidden mt-1.5">
+            <div
+              className="w-full h-1.5 rounded-full overflow-hidden mt-1.5"
+              style={{ backgroundColor: 'var(--bg-surface-muted)' }}
+            >
               <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  isPaused
-                    ? 'bg-amber-vault'
-                    : 'bg-gradient-to-r from-cyan-cyber via-lime-neon to-emerald-400 shadow-[0_0_8px_rgba(204,255,0,0.8)]'
-                }`}
-                style={{ width: `${Math.max(3, task.progress)}%` }}
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.max(3, task.progress || 0)}%`,
+                  backgroundColor: isPaused ? 'var(--accent-vault)' : 'var(--accent)',
+                }}
               />
             </div>
           </div>
         </div>
 
-        {/* Quick controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             type="button"
             onClick={handleTogglePause}
             disabled={loading}
-            className={`p-1.5 rounded-lg transition-all spring-press border ${
-              isPaused
-                ? 'bg-amber-vault text-obsidian border-amber-300 font-bold'
-                : 'bg-lime-neon/20 text-lime-neon border-lime-neon/40 hover:bg-lime-neon hover:text-obsidian'
-            }`}
+            className="p-1.5 rounded-lg transition-all spring-press"
+            style={{
+              backgroundColor: isPaused ? 'var(--accent-vault)' : 'var(--accent)',
+              color: isPaused ? '#FFFFFF' : 'var(--text-on-accent)',
+            }}
             title={isPaused ? 'Resume' : 'Pause'}
           >
             {loading ? (
@@ -106,7 +108,11 @@ export function MiniDownloadBanner({ task, onOpenDownloads }) {
             type="button"
             onClick={handleCancel}
             disabled={loading}
-            className="p-1.5 rounded-lg bg-white/5 text-slate-400 hover:bg-crimson-tactical/20 hover:text-rose-300 border border-white/10 transition-all spring-press"
+            className="p-1.5 rounded-lg transition-all spring-press"
+            style={{
+              backgroundColor: 'var(--bg-surface-muted)',
+              color: 'var(--text-muted)',
+            }}
             title="Cancel"
           >
             <X size={13} />

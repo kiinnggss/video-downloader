@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pause, Play, X, Zap, Loader2, AlertCircle, Activity, Gauge, Clock } from 'lucide-react';
+import { Pause, Play, X, Loader2, AlertCircle, Clock, ArrowDownCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 
 export function ActiveDownloadCard({ task, onStatusChange }) {
@@ -11,9 +11,10 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
   const isPaused = task.status === 'paused';
   const isCancelled = task.status === 'cancelled';
   const downloadedMb = ((task.downloaded_bytes || 0) / (1024 * 1024)).toFixed(2);
-  const totalMb = task.total_bytes && task.total_bytes > 0
-    ? (task.total_bytes / (1024 * 1024)).toFixed(2)
-    : null;
+  const totalMb =
+    task.total_bytes && task.total_bytes > 0
+      ? (task.total_bytes / (1024 * 1024)).toFixed(2)
+      : null;
 
   const handleTogglePause = async () => {
     if (loadingAction || !task.task_id) return;
@@ -49,14 +50,16 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
 
   if (isCancelled) {
     return (
-      <div className="bento-card rounded-3xl p-4 border border-rose-200 animate-fade-in flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
-            <X size={17} />
+      <div className="surface-card p-4 border-rose-400/70 animate-fade-in flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center flex-shrink-0">
+            <X size={18} />
           </div>
-          <div>
-            <h4 className="font-bold text-sm text-slate-950">Transfer Cancelled</h4>
-            <span className="text-[11px] text-slate-500 font-mono truncate max-w-[220px] block">
+          <div className="min-w-0">
+            <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+              Transfer Cancelled
+            </h4>
+            <span className="text-[11px] font-mono truncate block" style={{ color: 'var(--text-muted)' }}>
               {task.title}
             </span>
           </div>
@@ -66,132 +69,108 @@ export function ActiveDownloadCard({ task, onStatusChange }) {
   }
 
   return (
-    <div
-      className={`bento-telemetry rounded-3xl p-4.5 transition-all duration-300 border ${
-        isPaused
-          ? 'border-amber-vault/40 bg-amber-950/20 shadow-[0_0_25px_-5px_rgba(255,184,0,0.25)]'
-          : 'border-lime-neon/40 shadow-lime-glow'
-      } animate-fade-in flex flex-col gap-4`}
-    >
-      {/* Telemetry Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Radar Beacon */}
-          <div className="relative flex items-center justify-center w-6 h-6">
-            {!isPaused && <span className="absolute w-5 h-5 rounded-full bg-lime-neon/40 radar-ping" />}
+    <div className="surface-card-active p-4 animate-fade-in flex flex-col gap-3">
+      {/* Row 1: Artwork / Icon + Title + Controls */}
+      <div className="flex items-center gap-3">
+        <div
+          className="relative w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: isPaused ? 'var(--accent-vault-soft)' : 'var(--accent-soft)',
+            color: isPaused ? 'var(--accent-vault-text)' : 'var(--accent-text)',
+          }}
+        >
+          {!isPaused && (
             <span
-              className={`w-2.5 h-2.5 rounded-full relative z-10 ${
-                isPaused ? 'bg-amber-vault' : 'bg-lime-neon shadow-[0_0_8px_#ccff00]'
-              }`}
+              className="absolute w-9 h-9 rounded-full radar-ping"
+              style={{ backgroundColor: 'var(--accent-soft)' }}
+            />
+          )}
+          <ArrowDownCircle size={22} className="relative z-10" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+              {task.title || 'Downloading stream...'}
+            </h4>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={loadingAction}
+                className="text-xs font-semibold hover:text-rose-500 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                title="Cancel download"
+                aria-label="Cancel Download"
+              >
+                cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTogglePause}
+                disabled={loadingAction}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all spring-press"
+                style={{
+                  backgroundColor: isPaused ? 'var(--accent-vault)' : 'var(--accent)',
+                  color: 'var(--text-on-accent)',
+                  border: '1px solid var(--border-color)',
+                }}
+                title={isPaused ? 'Resume transfer' : 'Pause transfer'}
+                aria-label={isPaused ? 'Resume Transfer' : 'Pause Transfer'}
+              >
+                {loadingAction ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : isPaused ? (
+                  <Play size={14} strokeWidth={2.6} />
+                ) : (
+                  <Pause size={14} strokeWidth={2.6} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Linear Sleek Progress Bar */}
+          <div
+            className="w-full h-2 rounded-full overflow-hidden mt-2.5"
+            style={{ backgroundColor: 'var(--bg-surface-muted)' }}
+          >
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.max(3, task.progress || 0)}%`,
+                backgroundColor: isPaused ? 'var(--accent-vault)' : 'var(--accent)',
+              }}
             />
           </div>
-          <span className="text-[11px] font-mono font-black tracking-wider uppercase text-white">
-            {isPaused ? 'STREAM PAUSED' : 'LIVE TRANSFER'}
-          </span>
-        </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleTogglePause}
-            disabled={loadingAction}
-            className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all spring-press flex items-center gap-1.5 border ${
-              isPaused
-                ? 'bg-amber-vault text-obsidian border-amber-300 hover:bg-amber-300 shadow-md'
-                : 'bg-lime-neon/15 text-lime-neon border-lime-neon/40 hover:bg-lime-neon hover:text-obsidian'
-            }`}
-            title={isPaused ? 'Resume Transfer' : 'Pause Transfer'}
-            aria-label={isPaused ? 'Resume Transfer' : 'Pause Transfer'}
-          >
-            {loadingAction ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : isPaused ? (
-              <>
-                <Play size={13} strokeWidth={2.8} />
-                <span>Resume</span>
-              </>
-            ) : (
-              <>
-                <Pause size={13} strokeWidth={2.8} />
-                <span>Pause</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={loadingAction}
-            className="p-2 rounded-xl bg-white/5 text-slate-400 hover:bg-crimson-tactical/20 hover:text-rose-300 border border-white/10 hover:border-crimson-tactical/40 transition-all spring-press"
-            title="Cancel Download"
-            aria-label="Cancel Download"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Speedometer Gauges Row */}
-      <div className="flex items-baseline justify-between pt-1">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-            Transfer Speed
-          </span>
-          <span
-            className={`font-mono text-2xl font-black tracking-tight ${
-              isPaused ? 'text-amber-vault' : 'text-lime-neon drop-shadow-[0_0_12px_rgba(204,255,0,0.4)]'
-            }`}
-          >
-            {isPaused ? '0.00 KB/s' : task.speed || 'Initializing'}
-          </span>
-        </div>
-
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Progress</span>
-          <span className="font-mono text-2xl font-black text-white tracking-tight">
-            {task.progress}%
-          </span>
-        </div>
-      </div>
-
-      {/* Segmented Gradient Progress Track */}
-      <div className="w-full flex flex-col gap-1.5">
-        <div className="w-full h-3 rounded-xl bg-obsidian-base border border-white/10 overflow-hidden p-0.5 shadow-inner">
+          {/* Telemetry Meta Row: Speed on left, Percentage & MB on right */}
           <div
-            className={`h-full rounded-lg transition-all duration-300 ${
-              isPaused
-                ? 'bg-amber-vault'
-                : 'bg-gradient-to-r from-cyan-cyber via-lime-neon to-emerald-400 shadow-[0_0_15px_rgba(204,255,0,0.8)]'
-            }`}
-            style={{ width: `${Math.max(2, task.progress)}%` }}
-          />
-        </div>
-
-        {/* Telemetry Chips */}
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
-          <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-slate-300">
-            {downloadedMb} MB{totalMb ? ` / ${totalMb} MB` : ''}
-          </span>
-          {task.eta_seconds && !isPaused ? (
-            <span className="flex items-center gap-1 text-cyan-cyber font-semibold px-2 py-0.5 rounded-md bg-cyan-cyber/10 border border-cyan-cyber/20">
-              <Clock size={11} />
-              <span>{task.eta_seconds}s REMAINING</span>
+            className="flex items-center justify-between text-[11px] font-mono pt-1.5"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <span className="font-bold" style={{ color: isPaused ? 'var(--accent-vault-text)' : 'var(--accent-text)' }}>
+              {isPaused ? 'Paused' : task.speed || 'Initializing...'}
             </span>
-          ) : (
-            <span className="text-slate-500 font-mono text-[10px]">
-              {isPaused ? 'STANDBY' : 'STREAMING'}
-            </span>
-          )}
-        </div>
-      </div>
 
-      <div className="truncate text-xs font-semibold text-slate-300 border-t border-white/5 pt-2">
-        {task.title}
+            <div className="flex items-center gap-2">
+              {task.eta_seconds && !isPaused ? (
+                <span className="flex items-center gap-0.5">
+                  <Clock size={10} />
+                  <span>{task.eta_seconds}s</span>
+                </span>
+              ) : null}
+              <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                {task.progress}%{totalMb ? ` of ${totalMb} MB` : ` (${downloadedMb} MB)`}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {actionError && (
-        <div className="flex items-center gap-1.5 text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
+        <div className="flex items-center gap-1.5 text-[11px] text-rose-500 bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
           <AlertCircle size={13} />
           <span>{actionError}</span>
         </div>

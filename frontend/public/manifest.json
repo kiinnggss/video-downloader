@@ -5,8 +5,17 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#050814",
-  "theme_color": "#070c1d",
+  "background_color": "#f8f9fb",
+  "theme_color": "#f8f9fb",
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/icon-192.png",

@@ -1,74 +1,75 @@
 import React from 'react';
 import { Compass, ArrowDownCircle, Folder, Shield } from 'lucide-react';
+import { useTheme } from '../theme/ThemeContext';
+import { getContrastTextColor, hexToRgba } from '../theme/themes';
 
-const TABS = [
-  {
-    id: 'home',
-    label: 'Inspect',
-    icon: Compass,
-    bubbleGradient: 'bg-gradient-to-tr from-cyan-500 via-sky-400 to-blue-500',
-    bubbleBorder: 'border-cyan-200/90',
-    bubbleShadow: 'shadow-[0_10px_25px_-4px_rgba(6,182,212,0.5),inset_0_2px_4px_rgba(255,255,255,0.7)]',
-    iconColor: 'text-white',
-    textColor: 'text-cyan-950 font-black',
-    dotColor: 'bg-cyan-600',
-    dockGlow: 'border-cyan-400/30 shadow-[0_20px_50px_-10px_rgba(6,182,212,0.22),0_8px_24px_-4px_rgba(15,23,42,0.08)]',
-  },
-  {
-    id: 'downloads',
-    label: 'Transfers',
-    icon: ArrowDownCircle,
-    bubbleGradient: 'bg-gradient-to-tr from-emerald-500 via-lime-400 to-green-400',
-    bubbleBorder: 'border-lime-200/90',
-    bubbleShadow: 'shadow-[0_10px_25px_-4px_rgba(132,204,22,0.5),inset_0_2px_4px_rgba(255,255,255,0.7)]',
-    iconColor: 'text-slate-950',
-    textColor: 'text-emerald-950 font-black',
-    dotColor: 'bg-emerald-600',
-    dockGlow: 'border-emerald-400/30 shadow-[0_20px_50px_-10px_rgba(16,185,129,0.22),0_8px_24px_-4px_rgba(15,23,42,0.08)]',
-  },
-  {
-    id: 'files',
-    label: 'Library',
-    icon: Folder,
-    bubbleGradient: 'bg-gradient-to-tr from-blue-600 via-indigo-500 to-violet-500',
-    bubbleBorder: 'border-indigo-200/90',
-    bubbleShadow: 'shadow-[0_10px_25px_-4px_rgba(99,102,241,0.5),inset_0_2px_4px_rgba(255,255,255,0.7)]',
-    iconColor: 'text-white',
-    textColor: 'text-indigo-950 font-black',
-    dotColor: 'bg-indigo-600',
-    dockGlow: 'border-indigo-400/30 shadow-[0_20px_50px_-10px_rgba(99,102,241,0.22),0_8px_24px_-4px_rgba(15,23,42,0.08)]',
-  },
-  {
-    id: 'vault',
-    label: 'Vault',
-    icon: Shield,
-    bubbleGradient: 'bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-400',
-    bubbleBorder: 'border-amber-200/90',
-    bubbleShadow: 'shadow-[0_10px_25px_-4px_rgba(245,158,11,0.55),inset_0_2px_4px_rgba(255,255,255,0.7)]',
-    iconColor: 'text-amber-950',
-    textColor: 'text-amber-950 font-black',
-    dotColor: 'bg-amber-600',
-    dockGlow: 'border-amber-400/40 shadow-[0_20px_50px_-10px_rgba(245,158,11,0.25),0_8px_24px_-4px_rgba(15,23,42,0.08)]',
-  },
+const TAB_DEFS = [
+  { id: 'home', label: 'Inspect', icon: Compass, role: 'primary' },
+  { id: 'downloads', label: 'Transfers', icon: ArrowDownCircle, role: 'secondary' },
+  { id: 'files', label: 'Library', icon: Folder, role: 'primary' },
+  { id: 'vault', label: 'Vault', icon: Shield, role: 'vault' },
 ];
 
 export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) {
-  const activeIndex = TABS.findIndex((t) => t.id === currentTab);
+  const { theme, effectiveAccent } = useTheme();
+  const activeIndex = TAB_DEFS.findIndex((t) => t.id === currentTab);
   const safeIndex = activeIndex >= 0 ? activeIndex : 0;
-  const currentConfig = TABS[safeIndex] || TABS[0];
-  const tabPercent = 100 / TABS.length;
+  const activeTab = TAB_DEFS[safeIndex] || TAB_DEFS[0];
+  const tabPercent = 100 / TAB_DEFS.length;
+
+  const getTabVisuals = (role) => {
+    if (role === 'secondary') {
+      const bg = theme.tokens['--accent-secondary'];
+      return {
+        bubbleBg: bg,
+        bubbleIconColor: getContrastTextColor(bg),
+        bubbleGlow: hexToRgba(bg, 0.42),
+        labelColor: 'var(--accent-secondary-text)',
+        dotColor: bg,
+      };
+    }
+    if (role === 'vault') {
+      const bg = theme.tokens['--accent-vault'];
+      return {
+        bubbleBg: bg,
+        bubbleIconColor: getContrastTextColor(bg),
+        bubbleGlow: hexToRgba(bg, 0.42),
+        labelColor: 'var(--accent-vault-text)',
+        dotColor: bg,
+      };
+    }
+    return {
+      bubbleBg: effectiveAccent,
+      bubbleIconColor: getContrastTextColor(effectiveAccent),
+      bubbleGlow: hexToRgba(effectiveAccent, 0.42),
+      labelColor: 'var(--accent-text)',
+      dotColor: effectiveAccent,
+    };
+  };
+
+  const activeVisuals = getTabVisuals(activeTab.role);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-5 px-4 pointer-events-none select-none">
       <div className="relative w-full max-w-sm pointer-events-auto">
-        {/* Main white bubble navigation container */}
+        {/* Main tactile floating bubble navigation container */}
         <div
-          className={`relative flex items-center justify-around h-16 rounded-[36px] px-2 glass-dock transition-all duration-500 border ${currentConfig.dockGlow}`}
+          className="relative flex items-center justify-around h-16 rounded-[36px] px-2 surface-dock transition-all duration-500"
+          style={{
+            borderRadius: theme.id === 'fitzgerald-print' ? '14px' : '36px',
+          }}
         >
-          {/* Specular glass reflection along top edge of bubble */}
-          <div className="absolute top-0 left-6 right-6 h-3 rounded-full bg-gradient-to-b from-white/90 to-transparent pointer-events-none" />
+          {/* Specular hairline reflection along top edge */}
+          <div
+            className="absolute top-0 left-8 right-8 h-[1px] pointer-events-none"
+            style={{
+              background: theme.isDark
+                ? 'linear-gradient(to right, transparent, rgba(255,255,255,0.22), transparent)'
+                : 'linear-gradient(to right, transparent, rgba(255,255,255,0.95), transparent)',
+            }}
+          />
 
-          {/* Tactile Floating Active Bubble */}
+          {/* Tactile Floating Active Bubble (preserves exact spring glide animation) */}
           <div
             className="absolute -top-5 transition-all duration-400 pointer-events-none flex justify-center"
             style={{
@@ -78,24 +79,39 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
             }}
           >
             <div
-              className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border ${currentConfig.bubbleBorder} ${currentConfig.bubbleGradient} ${currentConfig.bubbleShadow}`}
+              className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{
+                backgroundColor: activeVisuals.bubbleBg,
+                color: activeVisuals.bubbleIconColor,
+                border: `${theme.tokens['--border-width']} solid ${
+                  theme.id === 'paw-pop' || theme.id === 'fitzgerald-print'
+                    ? theme.tokens['--border-color']
+                    : 'rgba(255,255,255,0.55)'
+                }`,
+                boxShadow:
+                  theme.id === 'paw-pop'
+                    ? '0 4px 0px #1B140E, 0 8px 18px rgba(27,20,14,0.2)'
+                    : `0 10px 24px -4px ${activeVisuals.bubbleGlow}, inset 0 2px 4px rgba(255,255,255,0.45)`,
+              }}
             >
-              {/* Specular highlight */}
-              <div className="absolute top-1 left-2.5 right-2.5 h-3 rounded-full bg-white/60 blur-[1px] pointer-events-none" />
+              {/* Specular bubble shine */}
+              <div className="absolute top-1 left-2.5 right-2.5 h-2.5 rounded-full bg-white/40 blur-[1px] pointer-events-none" />
 
-              {React.createElement(currentConfig.icon, {
+              {React.createElement(activeTab.icon, {
                 size: 20,
-                strokeWidth: 2.8,
-                className: `${currentConfig.iconColor} relative z-10 drop-shadow-sm`,
+                strokeWidth: 2.6,
+                className: 'relative z-10',
+                style: { color: activeVisuals.bubbleIconColor },
               })}
             </div>
           </div>
 
           {/* Tab Buttons */}
-          {TABS.map((tab) => {
+          {TAB_DEFS.map((tab) => {
             const isActive = tab.id === currentTab;
             const Icon = tab.icon;
             const showBadge = tab.id === 'downloads' && activeDownloadCount > 0;
+            const tabVisuals = getTabVisuals(tab.role);
 
             return (
               <button
@@ -110,18 +126,25 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
                   className={`transition-all duration-300 flex items-center justify-center ${
                     isActive
                       ? 'opacity-0 scale-75 pointer-events-none h-0 mb-0'
-                      : 'text-slate-400 hover:text-slate-700 mb-1'
+                      : 'mb-1'
                   }`}
+                  style={!isActive ? { color: 'var(--dock-icon-inactive)' } : undefined}
                 >
                   <Icon size={20} strokeWidth={2.1} />
                   {showBadge && !isActive && (
-                    <span className="absolute top-2 right-1/4 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono font-black text-[9px] shadow-[0_2px_8px_rgba(16,185,129,0.4)] animate-pulse">
+                    <span
+                      className="absolute top-2 right-1/4 px-1.5 py-0.5 rounded-full font-mono font-black text-[9px] animate-pulse"
+                      style={{
+                        backgroundColor: 'var(--accent)',
+                        color: 'var(--text-on-accent)',
+                      }}
+                    >
                       {activeDownloadCount}
                     </span>
                   )}
                 </div>
 
-                {/* Active Label under the selecting tool */}
+                {/* High-Contrast Active Label under the selecting tool */}
                 <div
                   className={`flex flex-col items-center transition-all duration-300 ${
                     isActive
@@ -130,12 +153,14 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
                   }`}
                 >
                   <span
-                    className={`text-[11px] font-mono tracking-tight font-extrabold ${tab.textColor}`}
+                    className="text-[11px] font-mono tracking-tight font-extrabold"
+                    style={{ color: tabVisuals.labelColor }}
                   >
                     {tab.label}
                   </span>
                   <span
-                    className={`w-3.5 h-1 rounded-full mt-0.5 ${tab.dotColor}`}
+                    className="w-4 h-1 rounded-full mt-0.5"
+                    style={{ backgroundColor: tabVisuals.dotColor }}
                   />
                 </div>
               </button>

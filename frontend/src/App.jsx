@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider } from './theme/ThemeContext';
 import { InspectorView } from './components/InspectorView';
 import { DownloadsView } from './components/DownloadsView';
 import { FilesView } from './components/FilesView';
@@ -6,18 +7,45 @@ import { VaultView } from './components/VaultView';
 import { BottomNav } from './components/BottomNav';
 import { MiniDownloadBanner } from './components/MiniDownloadBanner';
 import { InstallAppModal } from './components/InstallAppModal';
+import { ThemeSwitcherModal } from './components/ThemeSwitcherModal';
 import { useTelemetry } from './api/telemetry';
 import { apiClient } from './api/client';
 
-export default function App() {
+function extractSharedUrlFromLocation() {
+  if (typeof window === 'undefined' || !window.location.search) return '';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const directUrl = params.get('url');
+    const sharedText = params.get('text') || '';
+    const candidate = directUrl || sharedText;
+    const match = candidate.match(/https?:\/\/[^\s"'<>]+/i);
+    return match ? match[0] : '';
+  } catch {
+    return '';
+  }
+}
+
+function CrystalShell() {
   const [tab, setTab] = useState('home');
   const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [sharedUrl, setSharedUrl] = useState(() => extractSharedUrlFromLocation());
   const { activeTask } = useTelemetry();
 
   const isDownloading = Boolean(
-    activeTask && (activeTask.status === 'downloading' || activeTask.status === 'paused' || activeTask.status === 'queued')
+    activeTask &&
+      (activeTask.status === 'downloading' ||
+        activeTask.status === 'paused' ||
+        activeTask.status === 'queued')
   );
+
+  // Clean URL query params after consuming shared target link
+  useEffect(() => {
+    if (sharedUrl && typeof window !== 'undefined' && window.history?.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [sharedUrl]);
 
   // Capture PWA install prompt event on Android/Chrome/Edge
   useEffect(() => {
@@ -83,12 +111,16 @@ export default function App() {
   }, [isDownloading]);
 
   return (
-    <div className="min-h-screen cyber-mesh-bg text-slate-900 flex flex-col justify-between selection:bg-cyan-500/20 selection:text-cyan-900">
+    <div className="min-h-screen theme-canvas flex flex-col justify-between">
       <main className="w-full flex-1 flex flex-col pb-24">
         {tab === 'home' && (
-          <InspectorView 
+          <InspectorView
+            sharedUrl={sharedUrl}
+            onConsumeSharedUrl={() => setSharedUrl('')}
             onDownloadStarted={() => setTab('downloads')}
+            onNavigate={setTab}
             onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            onOpenThemeModal={() => setIsThemeModalOpen(true)}
             hasInstallPrompt={Boolean(installPromptEvent)}
           />
         )}
@@ -97,10 +129,18 @@ export default function App() {
             activeTask={activeTask}
             onGoToHome={() => setTab('home')}
             onGoToFiles={() => setTab('files')}
+            onOpenThemeModal={() => setIsThemeModalOpen(true)}
           />
         )}
-        {tab === 'files' && <FilesView activeTask={activeTask} />}
-        {tab === 'vault' && <VaultView />}
+        {tab === 'files' && (
+          <FilesView
+            activeTask={activeTask}
+            onOpenThemeModal={() => setIsThemeModalOpen(true)}
+          />
+        )}
+        {tab === 'vault' && (
+          <VaultView onOpenThemeModal={() => setIsThemeModalOpen(true)} />
+        )}
       </main>
 
       {/* Floating mini download banner when on other screens */}
@@ -111,7 +151,7 @@ export default function App() {
         />
       )}
 
-      {/* Fluid Morphing Glass Navigation Bar */}
+      {/* Tactile Floating Bubble Navigation Bar */}
       <BottomNav
         currentTab={tab}
         onChangeTab={setTab}
@@ -124,6 +164,20 @@ export default function App() {
         onClose={() => setIsInstallModalOpen(false)}
         installPromptEvent={installPromptEvent}
       />
+
+      {/* Appearance Theme Switcher Modal */}
+      <ThemeSwitcherModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <CrystalShell />
+    </ThemeProvider>
   );
 }

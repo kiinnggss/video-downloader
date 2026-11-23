@@ -1,64 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Search,
   X,
   Download,
-  Compass,
   Loader2,
   Settings,
   Smartphone,
   Sparkles,
   Clipboard,
   Play,
-  ShieldCheck,
-  Layers,
-  Code2,
-  ArrowRight,
+  Shield,
+  Palette,
+  ArrowDownCircle,
+  Folder,
   Link2,
+  Film,
+  Music,
+  Zap,
+  ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { useTheme } from '../theme/ThemeContext';
 import { FormatPickerModal } from './FormatPickerModal';
 import { CookieSettingsModal } from './CookieSettingsModal';
+import { MediaPlayerModal } from './MediaPlayerModal';
 
 const PLATFORMS = [
-  { name: 'YouTube', badge: 'YT', color: 'text-rose-700 border-rose-200/90 bg-rose-50/90 hover:bg-rose-100/80' },
-  { name: 'TikTok', badge: 'TT', color: 'text-sky-800 border-sky-200/90 bg-sky-50/90 hover:bg-sky-100/80' },
-  { name: 'PlayVids', badge: 'PV', color: 'text-emerald-800 border-emerald-200/90 bg-emerald-50/90 hover:bg-emerald-100/80' },
-  { name: 'Instagram', badge: 'IG', color: 'text-fuchsia-800 border-fuchsia-200/90 bg-fuchsia-50/90 hover:bg-fuchsia-100/80' },
-  { name: 'HLS & DASH', badge: 'M3U8', color: 'text-indigo-800 border-indigo-200/90 bg-indigo-50/90 hover:bg-indigo-100/80' },
+  { name: 'YouTube', badge: 'YT' },
+  { name: 'TikTok', badge: 'TT' },
+  { name: 'PlayVids', badge: 'PV' },
+  { name: 'Instagram', badge: 'IG' },
+  { name: 'HLS / DASH', badge: 'M3U8' },
 ];
 
-export function InspectorView({ onDownloadStarted, onOpenInstallModal, hasInstallPrompt }) {
+const RECENT_URLS_KEY = 'crystal_recent_urls';
+
+function loadRecentUrls() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(RECENT_URLS_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentUrl(urlStr, title) {
+  if (typeof window === 'undefined' || !urlStr) return [];
+  try {
+    const existing = loadRecentUrls().filter((item) => item.url !== urlStr);
+    const next = [{ url: urlStr, title: title || urlStr }, ...existing].slice(0, 4);
+    localStorage.setItem(RECENT_URLS_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return [];
+  }
+}
+
+export function InspectorView({
+  sharedUrl = '',
+  onConsumeSharedUrl,
+  onDownloadStarted,
+  onNavigate,
+  onOpenInstallModal,
+  onOpenThemeModal,
+}) {
+  const { theme } = useTheme();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [inspectData, setInspectData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCookieModalOpen, setIsCookieModalOpen] = useState(false);
+  const [directToVault, setDirectToVault] = useState(false);
+  const [quickDownloading, setQuickDownloading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [toastMsg, setToastMsg] = useState('');
+  const [recentFiles, setRecentFiles] = useState([]);
+  const [recentUrls, setRecentUrls] = useState(() => loadRecentUrls());
+  const [previewMedia, setPreviewMedia] = useState(null);
 
-  const handleInspect = async (e) => {
-    e?.preventDefault();
-    if (!url.trim()) return;
+  const runInspect = useCallback(async (targetUrl) => {
+    const trimmed = String(targetUrl || '').trim();
+    if (!trimmed) return;
     setLoading(true);
     setErrorMsg('');
-    setToastMsg('');
+    setInspectData(null);
     try {
-      const data = await apiClient.inspect(url.trim());
+      const data = await apiClient.inspect(trimmed);
       setInspectData(data);
+      setRecentUrls(saveRecentUrl(trimmed, data?.title));
     } catch (err) {
       setErrorMsg(err.message || 'Failed to detect video stream');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Load recent saved library files for Home preview strip
+  useEffect(() => {
+    apiClient
+      .getFiles('all')
+      .then((list) => {
+        if (Array.isArray(list)) {
+          setRecentFiles(list.slice(-3).reverse());
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Auto-inspect incoming Web Share Target link
+  useEffect(() => {
+    if (sharedUrl) {
+      setUrl(sharedUrl);
+      runInspect(sharedUrl);
+      if (onConsumeSharedUrl) onConsumeSharedUrl();
+    }
+  }, [sharedUrl, runInspect, onConsumeSharedUrl]);
+
+  const handleInspectSubmit = async (e) => {
+    e?.preventDefault();
+    await runInspect(url);
   };
 
   const handlePaste = async () => {
     try {
       if (navigator?.clipboard?.readText) {
         const text = await navigator.clipboard.readText();
-        if (text) {
-          setUrl(text.trim());
+        const trimmed = (text || '').trim();
+        if (trimmed) {
+          setUrl(trimmed);
+          if (/^https?:\/\//i.test(trimmed)) {
+            await runInspect(trimmed);
+          }
         }
       }
     } catch {
@@ -77,146 +150,281 @@ export function InspectorView({ onDownloadStarted, onOpenInstallModal, hasInstal
     }
   };
 
+  const handleQuickBestDownload = async () => {
+    if (!inspectData || quickDownloading) return;
+    setQuickDownloading(true);
+    setErrorMsg('');
+    try {
+      const bestVideo = (inspectData.formats || []).find((f) => f.resolution !== 'Audio');
+      await apiClient.startDownload({
+        url: inspectData.url || url.trim(),
+        format_id: bestVideo?.format_id || 'best',
+        is_audio: false,
+        in_vault: directToVault,
+      });
+      if (onDownloadStarted) {
+        onDownloadStarted();
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to start quick download');
+    } finally {
+      setQuickDownloading(false);
+    }
+  };
+
   const hasUrl = Boolean(url.trim());
 
   return (
     <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4 pt-5 pb-28">
-      {/* Top Header Bar */}
+      {/* Top Studio Header */}
       <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-950 text-white shadow-md border border-slate-800">
-            <span className="w-2.5 h-2.5 rounded-full bg-lime-neon relative z-10 shadow-[0_0_8px_#ccff00]" />
-            <span className="w-4 h-4 rounded-full bg-lime-neon/40 animate-ping absolute" />
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="relative flex items-center justify-center w-10 h-10 rounded-2xl flex-shrink-0"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: 'var(--text-on-accent)',
+              boxShadow: 'var(--shadow-button)',
+              border: 'var(--border-width) solid var(--border-color)',
+            }}
+          >
+            <Download size={19} strokeWidth={2.6} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-extrabold tracking-tight text-slate-950">
-                Crystal
-              </h1>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 text-lime-neon tracking-wider uppercase">
-                v4.2
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium">
-              Universal stream & vault downloader
+          <div className="min-w-0">
+            <h1
+              className="font-display text-lg font-extrabold tracking-tight leading-tight"
+              style={{ color: 'var(--canvas-text)' }}
+            >
+              Crystal
+            </h1>
+            <p className="text-[11px] truncate" style={{ color: 'var(--canvas-text-muted)' }}>
+              {theme.name} · Media & Vault
             </p>
           </div>
         </div>
 
-        {/* Action cluster */}
-        <div className="flex items-center gap-2">
+        {/* Action Cluster */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onOpenThemeModal && (
+            <button
+              type="button"
+              onClick={onOpenThemeModal}
+              className="flex items-center gap-1.5 px-2.5 py-2 surface-card text-xs font-bold spring-press"
+              style={{ borderRadius: 'var(--radius-button)' }}
+              title="Appearance & Themes"
+              aria-label="Open theme switcher"
+            >
+              <Palette size={15} style={{ color: 'var(--accent-text)' }} />
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: 'var(--accent)' }}
+              />
+            </button>
+          )}
+
           {onOpenInstallModal && (
             <button
               type="button"
               onClick={onOpenInstallModal}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bento-card text-xs font-bold text-slate-800 hover:text-slate-950 transition-all spring-press"
+              className="p-2.5 surface-card spring-press"
+              style={{ borderRadius: 'var(--radius-button)', color: 'var(--text-primary)' }}
               title="Install web app"
+              aria-label="Install app"
             >
-              <Smartphone size={14} className="text-sky-600" />
-              <span>Install</span>
+              <Smartphone size={15} />
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setIsCookieModalOpen(true)}
-            className="p-2.5 rounded-xl bento-card text-slate-600 hover:text-slate-950 transition-all spring-press"
-            title="Session settings"
+            className="p-2.5 surface-card spring-press"
+            style={{ borderRadius: 'var(--radius-button)', color: 'var(--text-primary)' }}
+            title="Session cookies & settings"
             aria-label="Session settings"
           >
-            <Settings size={16} />
+            <Settings size={15} />
           </button>
         </div>
       </div>
 
-      {/* Two-Tier Command Console */}
-      <div className="flex flex-col gap-2.5">
-        <form
-          onSubmit={handleInspect}
-          className="bento-command-bar rounded-3xl p-2.5 flex flex-col gap-2.5 transition-all focus-within:border-sky-500/70 focus-within:ring-4 focus-within:ring-sky-500/10"
+      {/* Hero Link Downloader Card */}
+      <form
+        onSubmit={handleInspectSubmit}
+        className="surface-hero p-4 flex flex-col gap-3"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className="text-xs font-extrabold uppercase tracking-wider font-mono"
+            style={{ color: 'var(--text-on-hero)' }}
+          >
+            Extract video or audio
+          </span>
+          <span
+            className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: 'var(--bg-surface-muted)',
+              color: 'var(--accent-text)',
+            }}
+          >
+            HD / MP3 / HLS
+          </span>
+        </div>
+
+        {/* Input Well */}
+        <div
+          className="flex items-center gap-2 p-1.5 pl-3 surface-input rounded-2xl transition-all"
+          style={{ borderRadius: 'var(--radius-button)' }}
         >
-          {/* Input Row */}
-          <div className="flex items-center gap-2 px-2 pt-1">
-            <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-500 flex-shrink-0">
-              <Link2 size={16} />
-            </div>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste any video or stream link..."
-              className="w-full bg-transparent text-sm text-slate-950 placeholder-slate-400 focus:outline-none font-medium py-1.5"
-            />
-            {url ? (
-              <button
-                type="button"
-                onClick={() => setUrl('')}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex-shrink-0"
-                aria-label="Clear URL input"
-              >
-                <X size={16} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handlePaste}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-950 transition-colors rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200/90 flex-shrink-0 spring-press"
-                title="Paste from clipboard"
-              >
-                <Clipboard size={13} className="text-sky-600" />
-                <span>Paste</span>
-              </button>
-            )}
-          </div>
-
-          {/* Action Bar Row */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 px-1">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {PLATFORMS.map((plat) => (
-                <button
-                  key={plat.name}
-                  type="button"
-                  onClick={() => {
-                    const inputEl = document.querySelector('input[type="url"]');
-                    inputEl?.focus();
-                  }}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-mono font-bold whitespace-nowrap transition-all spring-press ${plat.color}`}
-                >
-                  <span className="opacity-75">{plat.badge}</span>
-                  <span>{plat.name}</span>
-                </button>
-              ))}
-            </div>
-
+          <Link2 size={16} style={{ color: 'var(--text-muted)' }} className="flex-shrink-0" />
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Paste video or playlist link..."
+            className="w-full bg-transparent text-sm font-medium focus:outline-none py-1.5"
+            style={{ color: 'var(--text-primary)' }}
+          />
+          {url ? (
             <button
-              type="submit"
-              disabled={loading || !hasUrl}
-              className={`px-4 py-2 rounded-xl font-bold text-xs tracking-wide transition-all flex items-center gap-1.5 flex-shrink-0 spring-press ${
-                hasUrl
-                  ? 'bg-slate-950 hover:bg-slate-800 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200/80 cursor-not-allowed'
-              }`}
+              type="button"
+              onClick={() => {
+                setUrl('');
+                setInspectData(null);
+                setErrorMsg('');
+              }}
+              className="p-1.5 rounded-lg transition-colors flex-shrink-0"
+              style={{ color: 'var(--text-muted)' }}
+              aria-label="Clear URL input"
             >
-              {loading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin text-lime-neon" />
-                  <span>Scanning</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={13} className={hasUrl ? 'text-lime-neon' : 'text-slate-400'} />
-                  <span>Inspect</span>
-                </>
-              )}
+              <X size={16} />
             </button>
-          </div>
-        </form>
-      </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handlePaste}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl flex-shrink-0 spring-press"
+              style={{
+                backgroundColor: 'var(--bg-surface-muted)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+              }}
+              title="Paste link from clipboard and inspect"
+            >
+              <Clipboard size={13} style={{ color: 'var(--accent-text)' }} />
+              <span>Paste</span>
+            </button>
+          )}
+        </div>
 
-      {/* Notifications */}
+        {/* Supported Platform Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {PLATFORMS.map((plat) => (
+            <button
+              key={plat.name}
+              type="button"
+              onClick={() => {
+                const inputEl = document.querySelector('input[type="url"]');
+                inputEl?.focus();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap spring-press"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <span style={{ color: 'var(--accent-text)' }}>{plat.badge}</span>
+              <span>{plat.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Direct to Vault Toggle + Primary CTA */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => setDirectToVault(!directToVault)}
+            className="flex items-center gap-2 text-left spring-press"
+            aria-pressed={directToVault}
+          >
+            <div
+              className="w-9 h-5 rounded-full p-0.5 flex items-center transition-colors flex-shrink-0"
+              style={{
+                backgroundColor: directToVault ? 'var(--accent-vault)' : 'var(--bg-surface-muted)',
+                border: '1px solid var(--border-color)',
+              }}
+            >
+              <span
+                className={`w-3.5 h-3.5 rounded-full transition-transform ${
+                  directToVault ? 'translate-x-4' : 'translate-x-0'
+                }`}
+                style={{
+                  backgroundColor: directToVault ? '#FFFFFF' : 'var(--text-muted)',
+                }}
+              />
+            </div>
+            <span className="text-xs font-bold" style={{ color: 'var(--text-on-hero)' }}>
+              Save to Vault
+            </span>
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading || !hasUrl}
+            className="px-5 py-2.5 text-xs font-extrabold tracking-wide flex items-center gap-2 spring-press theme-btn-primary flex-shrink-0"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Scanning...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={14} />
+                <span>Inspect Stream</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Recent Inspected URLs Quick Chips */}
+      {!inspectData && !loading && recentUrls.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-0.5">
+          <span
+            className="flex items-center gap-1 text-[10px] font-mono font-bold flex-shrink-0"
+            style={{ color: 'var(--canvas-text-muted)' }}
+          >
+            <Clock size={11} />
+            <span>Recent:</span>
+          </span>
+          {recentUrls.map((item) => (
+            <button
+              key={item.url}
+              type="button"
+              onClick={() => {
+                setUrl(item.url);
+                runInspect(item.url);
+              }}
+              className="px-2.5 py-1 rounded-full text-[11px] font-medium truncate max-w-[140px] spring-press"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+              }}
+              title={item.url}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Error Message */}
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs text-center flex flex-col items-center gap-2 shadow-sm">
-          <span className="font-medium">{errorMsg}</span>
+        <div className="p-4 surface-card border-rose-400/70 text-xs text-center flex flex-col items-center gap-2">
+          <span className="font-semibold text-rose-600">{errorMsg}</span>
           {(errorMsg.toLowerCase().includes('sign in') ||
             errorMsg.toLowerCase().includes('age') ||
             errorMsg.toLowerCase().includes('restricted') ||
@@ -225,159 +433,296 @@ export function InspectorView({ onDownloadStarted, onOpenInstallModal, hasInstal
             <button
               type="button"
               onClick={() => setIsCookieModalOpen(true)}
-              className="text-[11px] underline font-bold text-sky-800 hover:text-sky-950"
+              className="text-xs underline font-bold"
+              style={{ color: 'var(--accent-text)' }}
             >
-              Sign-in required? Add session cookies
+              Add session cookies in Settings
             </button>
           )}
         </div>
       )}
 
-      {toastMsg && (
-        <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs text-center font-semibold flex items-center justify-center gap-2 shadow-sm">
-          <Download size={14} className="text-sky-600" />
-          <span>{toastMsg}</span>
+      {/* Skeleton Shimmer Loading State */}
+      {loading && (
+        <div className="surface-card p-4 flex flex-col gap-3 animate-fade-in">
+          <div className="w-full aspect-video rounded-2xl skeleton-shimmer" />
+          <div className="flex items-center justify-between gap-2">
+            <div className="h-4 w-24 rounded-lg skeleton-shimmer" />
+            <div className="h-4 w-20 rounded-lg skeleton-shimmer" />
+          </div>
+          <div className="h-5 w-4/5 rounded-lg skeleton-shimmer" />
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="h-10 rounded-xl skeleton-shimmer" />
+            <div className="h-10 rounded-xl skeleton-shimmer" />
+          </div>
         </div>
       )}
 
-      {/* Inspection Result Card */}
-      {inspectData ? (
-        <div className="bento-card-active rounded-3xl overflow-hidden flex flex-col gap-4 p-4 animate-fade-in">
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 shadow-sm group">
-            <img
-              src={inspectData.thumbnail}
-              alt={inspectData.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/20 pointer-events-none" />
+      {/* Inspected Media Result Card */}
+      {inspectData && !loading && (
+        <div className="surface-card-active overflow-hidden flex flex-col gap-4 p-4 animate-fade-in">
+          <div
+            className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 group"
+            style={{ border: '1px solid var(--border-color)' }}
+          >
+            {inspectData.thumbnail ? (
+              <img
+                src={inspectData.thumbnail}
+                alt={inspectData.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white/60">
+                <Film size={32} />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
 
-            {/* Live Stream Tag */}
-            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/90 backdrop-blur-md border border-white/15 text-[10px] font-mono font-bold text-lime-neon">
-              <span className="w-1.5 h-1.5 rounded-full bg-lime-neon animate-pulse" />
+            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-mono font-bold text-white">
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: 'var(--accent)' }}
+              />
               <span>STREAM READY</span>
             </div>
 
-            {/* Duration Tag */}
-            <span className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full bg-slate-950/90 backdrop-blur-md border border-white/15 text-white text-[11px] font-mono font-bold">
+            <span className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-white text-[11px] font-mono font-bold">
               {Math.floor((inspectData.duration || 0) / 60)}:
               {String((inspectData.duration || 0) % 60).padStart(2, '0')}
             </span>
           </div>
 
-          <div className="flex flex-col gap-1.5 px-0.5">
+          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200/90 text-slate-700 font-bold truncate">
+              <span
+                className="text-[11px] font-mono px-2.5 py-0.5 rounded-lg font-bold truncate"
+                style={{
+                  backgroundColor: 'var(--bg-surface-muted)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
                 {inspectData.author || 'Direct Stream'}
               </span>
-              <span className="text-[11px] font-mono text-sky-700 font-bold">
-                {(inspectData.formats || []).length} formats available
+              <span className="text-[11px] font-mono font-bold" style={{ color: 'var(--accent-text)' }}>
+                {(inspectData.formats || []).length} formats
               </span>
             </div>
-            <h2 className="font-extrabold text-base text-slate-950 line-clamp-2 leading-snug">
+            <h2 className="font-display font-extrabold text-base line-clamp-2 leading-snug">
               {inspectData.title}
             </h2>
           </div>
 
-          {/* Action Row */}
-          <div className="flex items-center gap-2 pt-1">
+          {/* 1-Tap Download & Format Picker Actions */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleQuickBestDownload}
+              disabled={quickDownloading}
+              className="py-3 px-3 font-extrabold text-xs tracking-wide flex items-center justify-center gap-1.5 spring-press theme-btn-primary"
+            >
+              {quickDownloading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Zap size={14} strokeWidth={2.5} />
+              )}
+              <span>1-Tap Best MP4</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="flex-1 py-3.5 px-4 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs tracking-wide uppercase flex items-center justify-center gap-2 shadow-md spring-press"
+              className="py-3 px-3 text-xs font-bold flex items-center justify-center gap-1.5 spring-press"
+              style={{
+                backgroundColor: 'var(--bg-surface-muted)',
+                color: 'var(--text-primary)',
+                borderRadius: 'var(--radius-button)',
+                border: '1px solid var(--border-color)',
+              }}
             >
-              <Download size={15} className="text-lime-neon" strokeWidth={2.6} />
-              <span>Configure Download</span>
-              <ArrowRight size={14} className="text-slate-400 ml-0.5" />
+              <Download size={14} />
+              <span>Choose Format</span>
             </button>
-          </div>
-        </div>
-      ) : (
-        /* Extraction Studio Empty State */
-        <div className="flex flex-col gap-2.5">
-          <div className="flex flex-col items-center justify-center p-5 text-center bento-card rounded-3xl gap-2.5">
-            <div className="w-12 h-12 rounded-2xl bg-slate-950 text-lime-neon flex items-center justify-center shadow-md border border-slate-800">
-              <Compass size={22} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="font-extrabold text-slate-950 text-sm tracking-tight">
-                Ready to extract media
-              </h3>
-              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-                Paste any video page, embedded player, or stream manifest link above to inspect available resolutions and audio tracks.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handlePaste}
-              className="mt-0.5 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-800 border border-slate-200/90 text-xs font-bold transition-all spring-press"
-            >
-              <Clipboard size={13} className="text-sky-600" />
-              <span>Paste Link from Clipboard</span>
-            </button>
-          </div>
-
-          {/* 2x2 Deep Extraction Capabilities Matrix */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="bento-card rounded-2xl p-3 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-sky-700 text-xs font-bold">
-                <Layers size={13} className="text-sky-600 flex-shrink-0" />
-                <span>HLS & DASH</span>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-snug">
-                Parses .m3u8 and .mpd manifests with multi-bitrate video and audio muxing.
-              </p>
-            </div>
-
-            <div className="bento-card rounded-2xl p-3 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-indigo-700 text-xs font-bold">
-                <Code2 size={13} className="text-indigo-600 flex-shrink-0" />
-                <span>Iframe & JS Scan</span>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-snug">
-                Follows nested iframe players, unescapes JSON state, and decodes Base64 links.
-              </p>
-            </div>
-
-            <div className="bento-card rounded-2xl p-3 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold">
-                <Play size={13} className="text-emerald-600 flex-shrink-0" />
-                <span>PlayVids & Social</span>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-snug">
-                Direct extractor patches for PlayVids, YouTube, TikTok, Instagram, and HTML5 video.
-              </p>
-            </div>
-
-            <div className="bento-card rounded-2xl p-3 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-amber-700 text-xs font-bold">
-                <ShieldCheck size={13} className="text-amber-600 flex-shrink-0" />
-                <span>Device Vault</span>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-snug">
-                PIN-locked local device storage with batch selection and VLC M3U playlist streaming.
-              </p>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Floating Action Button for active inspected media */}
-      {inspectData && (
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-slate-950 text-lime-neon shadow-xl transition-transform duration-200 z-40 flex items-center justify-center spring-press border-2 border-white"
-          title="Download Video"
-          aria-label="Download Video"
-        >
-          <Download size={22} strokeWidth={2.8} />
-        </button>
+      {/* Quick Feature Hub 2x2 Grid (Shot 1 & Shot 3 inspiration) */}
+      {!inspectData && !loading && (
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => onNavigate?.('downloads')}
+            className="surface-card p-4 text-left flex flex-col gap-2.5 spring-press"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--accent-secondary-soft)',
+                color: 'var(--accent-secondary-text)',
+              }}
+            >
+              <ArrowDownCircle size={20} />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                Transfers
+              </h3>
+              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                Live speed & queue
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate?.('files')}
+            className="surface-card p-4 text-left flex flex-col gap-2.5 spring-press"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--accent-soft)',
+                color: 'var(--accent-text)',
+              }}
+            >
+              <Folder size={20} />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                Library
+              </h3>
+              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                Saved videos & MP3
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate?.('vault')}
+            className="surface-card p-4 text-left flex flex-col gap-2.5 spring-press"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--accent-vault-soft)',
+                color: 'var(--accent-vault-text)',
+              }}
+            >
+              <Shield size={20} />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                Private Vault
+              </h3>
+              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                PIN lock & VLC stream
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenThemeModal}
+            className="surface-card p-4 text-left flex flex-col gap-2.5 spring-press"
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--text-on-accent)',
+              }}
+            >
+              <Palette size={20} />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                Themes
+              </h3>
+              <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>
+                {theme.name}
+              </p>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Recent Downloads Strip (Shot 1 & Shot 2) */}
+      {!inspectData && !loading && recentFiles.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between px-0.5">
+            <h3
+              className="font-display text-sm font-extrabold"
+              style={{ color: 'var(--canvas-text)' }}
+            >
+              Recent Downloads
+            </h3>
+            <button
+              type="button"
+              onClick={() => onNavigate?.('files')}
+              className="text-xs font-bold flex items-center gap-0.5 spring-press"
+              style={{ color: 'var(--canvas-text-muted)' }}
+            >
+              <span>See All</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {recentFiles.map((file) => (
+              <div
+                key={file.file_id}
+                onClick={() => setPreviewMedia(file)}
+                className="surface-card p-3 flex items-center justify-between gap-3 cursor-pointer spring-press"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-10 rounded-xl bg-slate-900 overflow-hidden relative flex items-center justify-center flex-shrink-0">
+                    {file.thumbnail ? (
+                      <img src={file.thumbnail} alt={file.title} className="w-full h-full object-cover" />
+                    ) : file.category === 'music' ? (
+                      <Music size={16} className="text-white" />
+                    ) : (
+                      <Film size={16} className="text-white" />
+                    )}
+                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                      <Play size={12} fill="white" className="text-white" />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                      {file.title}
+                    </p>
+                    <p className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                      {((file.filesize || 0) / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={`/api/files/${file.file_id}/download`}
+                  download={file.filename}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-2 rounded-xl flex-shrink-0"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-muted)',
+                    color: 'var(--accent-text)',
+                  }}
+                  title="Save to device"
+                  aria-label="Save to device"
+                >
+                  <Download size={14} />
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Format Modal */}
       <FormatPickerModal
         inspectData={inspectData}
         isOpen={isModalOpen}
+        defaultInVault={directToVault}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmDownload}
       />
@@ -386,6 +731,13 @@ export function InspectorView({ onDownloadStarted, onOpenInstallModal, hasInstal
       <CookieSettingsModal
         isOpen={isCookieModalOpen}
         onClose={() => setIsCookieModalOpen(false)}
+      />
+
+      {/* Inline Media Player for Recent Downloads */}
+      <MediaPlayerModal
+        media={previewMedia}
+        isOpen={Boolean(previewMedia)}
+        onClose={() => setPreviewMedia(null)}
       />
     </div>
   );

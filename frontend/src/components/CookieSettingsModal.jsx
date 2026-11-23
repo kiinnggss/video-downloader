@@ -67,24 +67,33 @@ export function CookieSettingsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-      <div 
-        className="relative w-full max-w-md bento-card rounded-3xl p-6 shadow-2xl border border-slate-200 text-slate-950 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md surface-card p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto no-scrollbar"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cookie-settings-title"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-amber-100 text-amber-700 border border-amber-200">
+            <div
+              className="p-2 rounded-2xl"
+              style={{
+                backgroundColor: 'var(--accent-vault-soft)',
+                color: 'var(--accent-vault-text)',
+              }}
+            >
               <Key size={18} />
             </div>
             <div>
-              <h2 id="cookie-settings-title" className="text-base font-bold text-slate-950">
+              <h2 id="cookie-settings-title" className="font-display text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
                 Account & Cookies
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 Unlock age-restricted and private streams
               </p>
             </div>
@@ -92,35 +101,41 @@ export function CookieSettingsModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 transition-colors"
+            className="p-1.5 rounded-full transition-colors"
+            style={{ backgroundColor: 'var(--bg-surface-muted)', color: 'var(--text-secondary)' }}
             aria-label="Close dialog"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Status Pill */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-slate-100 border border-slate-200 text-xs">
-          <span className="text-slate-600 font-medium">Device Session:</span>
+        <div
+          className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs"
+          style={{
+            backgroundColor: 'var(--bg-surface-muted)',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Device Session
+          </span>
           {hasCookies ? (
-            <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+            <span className="flex items-center gap-1.5 font-bold" style={{ color: 'var(--accent-text)' }}>
               <CheckCircle2 size={14} /> Active
             </span>
           ) : (
-            <span className="text-slate-500 font-medium">
+            <span className="font-medium" style={{ color: 'var(--text-muted)' }}>
               None configured
             </span>
           )}
         </div>
 
-        {/* Explainer */}
-        <p className="text-xs text-slate-600 leading-relaxed">
-          Public videos work automatically with built-in TLS browser emulation. If a video requires account access on YouTube, TikTok, or X, export your cookies in Netscape format and paste them below.
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          Public videos work automatically with built-in TLS browser emulation. If a video requires account access, export cookies in Netscape format and paste them below.
         </p>
 
-        {/* Cookie Input */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="cookie-input" className="text-[11px] font-medium text-slate-600">
+          <label htmlFor="cookie-input" className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
             Netscape Cookies text
           </label>
           <textarea
@@ -129,34 +144,35 @@ export function CookieSettingsModal({ isOpen, onClose }) {
             value={cookieContent}
             onChange={(e) => setCookieContent(e.target.value)}
             placeholder="# Netscape HTTP Cookie File&#10;.youtube.com TRUE / TRUE 1790000000 SID ..."
-            className="w-full rounded-2xl bg-white border border-slate-200 p-3 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 shadow-sm resize-none"
+            className="w-full rounded-2xl surface-input p-3 text-xs font-mono focus:outline-none resize-none"
           />
         </div>
 
-        {/* Notifications */}
         {statusMsg && (
-          <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+          <div
+            className="px-3 py-2 rounded-xl text-xs flex items-center gap-2 font-semibold"
+            style={{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent-text)' }}
+          >
             <CheckCircle2 size={14} className="flex-shrink-0" />
             <span>{statusMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <div className="px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
             <AlertCircle size={14} className="flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2">
           <button
             type="button"
             onClick={handleSave}
             disabled={loading || !cookieContent.trim()}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-lime-neon hover:bg-lime-400 disabled:opacity-30 text-obsidian text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm spring-press"
+            className="flex-1 py-2.5 px-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 spring-press theme-btn-primary"
           >
-            {loading ? <Loader2 size={14} className="animate-spin text-obsidian" /> : <ShieldCheck size={14} />}
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
             <span>Save Cookies</span>
           </button>
 
@@ -165,7 +181,7 @@ export function CookieSettingsModal({ isOpen, onClose }) {
               type="button"
               onClick={handleClear}
               disabled={loading}
-              className="py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1 spring-press"
+              className="py-2.5 px-3.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-1 spring-press"
               title="Remove stored cookies"
             >
               <Trash2 size={14} />

@@ -126,6 +126,21 @@ export const apiClient = {
     return res.json();
   },
 
+  async getDownloadsHistory() {
+    try {
+      const res = await fetch('/api/downloads', {
+        headers: {
+          'X-Device-Id': getDeviceId(),
+        },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  },
+
   async getFiles(category) {
     const q = category ? `?category=${category}` : '';
     const res = await fetch(`/api/files${q}`, {
@@ -136,6 +151,20 @@ export const apiClient = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to fetch files');
+    }
+    return res.json();
+  },
+
+  async moveFileToVault(fileId) {
+    const res = await fetch(`/api/files/${fileId}/move-to-vault`, {
+      method: 'POST',
+      headers: {
+        'X-Device-Id': getDeviceId(),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to move file to vault');
     }
     return res.json();
   },
