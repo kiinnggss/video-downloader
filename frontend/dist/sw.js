@@ -1,27 +1,10 @@
-const CACHE_NAME = 'crystal-cache-v5';
-let swKeepAliveTimer = null;
-
-function pingServerKeepAlive() {
-  const ts = Date.now();
-  fetch(`/api/keepalive?sw=${ts}`, {
-    method: 'GET',
-    cache: 'no-store',
-  }).catch(() => {});
-}
-
-function startSwKeepAliveLoop() {
-  if (swKeepAliveTimer) return;
-  pingServerKeepAlive();
-  swKeepAliveTimer = setInterval(pingServerKeepAlive, 20000);
-}
+const CACHE_NAME = 'crystal-cache-v6';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
-  startSwKeepAliveLoop();
 });
 
 self.addEventListener('activate', (event) => {
-  startSwKeepAliveLoop();
   event.waitUntil(
     caches
       .keys()
@@ -34,13 +17,6 @@ self.addEventListener('activate', (event) => {
       )
       .then(() => self.clients.claim())
   );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'PING_KEEPALIVE') {
-    startSwKeepAliveLoop();
-    pingServerKeepAlive();
-  }
 });
 
 self.addEventListener('fetch', (event) => {

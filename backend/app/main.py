@@ -39,59 +39,14 @@ from app.db import (
 )
 from app.config import VAULT_STORAGE, PUBLIC_STORAGE
 
-import asyncio
 import time
-import httpx
-
-PUBLIC_APP_URL = (
-    os.getenv("PUBLIC_APP_URL")
-    or os.getenv("RENDER_EXTERNAL_URL")
-    or "https://video-downloader-7e07c.containers.snapdeploy.app"
-).rstrip("/")
-SNAPDEPLOY_WAKE_URL = os.getenv(
-    "SNAPDEPLOY_WAKE_URL",
-    "https://snapdeploy.dev/api/public/wake/video-downloader-7e07c",
-)
-_last_ping_ts: int = 0
-
-
-async def _keep_container_awake_loop():
-    """Continuously pings the external container URL and wake API so the serverless proxy never idles out."""
-    global _last_ping_ts
-    await asyncio.sleep(5)
-    while True:
-        try:
-            ts = int(time.time())
-            headers = {
-                "User-Agent": "Crystal-KeepAlive-Daemon/1.0",
-                "Cache-Control": "no-cache, no-store",
-            }
-            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=headers) as client:
-                await client.get(f"{PUBLIC_APP_URL}/api/keepalive?t={ts}")
-                await client.get(f"{PUBLIC_APP_URL}/healthz?t={ts}")
-                if "snapdeploy.app" in PUBLIC_APP_URL and SNAPDEPLOY_WAKE_URL:
-                    await client.post(SNAPDEPLOY_WAKE_URL)
-            _last_ping_ts = ts
-        except asyncio.CancelledError:
-            break
-        except Exception:
-            pass
-        await asyncio.sleep(30)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     apply_extractor_patches()
-    ping_task = asyncio.create_task(_keep_container_awake_loop())
-    try:
-        yield
-    finally:
-        ping_task.cancel()
-        try:
-            await ping_task
-        except asyncio.CancelledError:
-            pass
+    yield
 
 
 app = FastAPI(title="Crystal Video Downloader API", lifespan=lifespan)
@@ -107,20 +62,12 @@ app.add_middleware(
 
 @app.get("/healthz")
 def healthz():
-    return {
-        "status": "ok",
-        "build": "v5-themes-studio",
-        "last_self_ping": _last_ping_ts,
-    }
+    return {"status": "ok", "build": "v5-themes-studio"}
 
 
 @app.get("/api/keepalive")
 def keep_alive():
-    return {
-        "status": "alive",
-        "timestamp": int(time.time()),
-        "last_self_ping": _last_ping_ts,
-    }
+    return {"status": "alive", "timestamp": int(time.time())}
 
 
 @app.post("/api/inspect", response_model=InspectResponse)

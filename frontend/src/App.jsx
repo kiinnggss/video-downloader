@@ -58,34 +58,13 @@ function CrystalShell() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
-  // Keep-alive heartbeat: ping every 15 seconds and on tab focus/visibility/network events
+  // Keep-alive heartbeat: ping every 25 seconds while tab is open
   useEffect(() => {
-    const sendHeartbeat = () => {
+    apiClient.pingKeepAlive();
+    const interval = setInterval(() => {
       apiClient.pingKeepAlive();
-      if (typeof navigator !== 'undefined' && navigator.serviceWorker?.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'PING_KEEPALIVE' });
-      }
-    };
-
-    sendHeartbeat();
-    const interval = setInterval(sendHeartbeat, 15000);
-
-    const handleVisibilityOrFocus = () => {
-      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
-        sendHeartbeat();
-      }
-    };
-
-    window.addEventListener('focus', handleVisibilityOrFocus);
-    window.addEventListener('online', sendHeartbeat);
-    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
-      window.removeEventListener('online', sendHeartbeat);
-      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
-    };
+    }, 25000);
+    return () => clearInterval(interval);
   }, []);
 
   // Screen Wake Lock: keep mobile screen awake while downloading

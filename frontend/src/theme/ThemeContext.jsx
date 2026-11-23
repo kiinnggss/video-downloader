@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import {
   THEMES,
   DEFAULT_THEME_ID,
+  isSupportedThemeId,
   getThemeById,
   normalizeHex,
   hexToRgba,
@@ -54,9 +55,14 @@ export function ThemeProvider({ children }) {
       return { themeId: DEFAULT_THEME_ID, customAccent: '', glassMode: false };
     }
     const storedId = localStorage.getItem(STORAGE_KEYS.themeId) || DEFAULT_THEME_ID;
-    const validTheme = getThemeById(storedId);
-    const storedAccent = localStorage.getItem(STORAGE_KEYS.customAccent) || '';
+    const supported = isSupportedThemeId(storedId);
+    const validTheme = supported ? getThemeById(storedId) : getThemeById(DEFAULT_THEME_ID);
+    const storedAccent = supported ? localStorage.getItem(STORAGE_KEYS.customAccent) || '' : '';
     const storedGlass = localStorage.getItem(STORAGE_KEYS.glassMode) === 'true';
+    if (!supported && localStorage.getItem(STORAGE_KEYS.themeId)) {
+      localStorage.setItem(STORAGE_KEYS.themeId, validTheme.id);
+      localStorage.removeItem(STORAGE_KEYS.customAccent);
+    }
     return {
       themeId: validTheme.id,
       customAccent: storedAccent,

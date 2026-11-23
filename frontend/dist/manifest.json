@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f8f9fb",
-  "theme_color": "#f8f9fb",
+  "background_color": "#C8B1AF",
+  "theme_color": "#C8B1AF",
   "share_target": {
     "action": "/",
     "method": "GET",

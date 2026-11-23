@@ -3,7 +3,7 @@ import { X, Check, Palette, RotateCcw, Sparkles } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 import { normalizeHex } from '../theme/themes';
 
-const QUICK_ACCENTS = ['#F95A1F', '#A855F7', '#2E6B47', '#F5A623', '#B31312'];
+const QUICK_ACCENTS = ['#23252A', '#A63D33', '#B31312', '#E48E58', '#D95877'];
 
 export function ThemeSwitcherModal({ isOpen, onClose }) {
   const {
@@ -111,7 +111,7 @@ export function ThemeSwitcherModal({ isOpen, onClose }) {
                 Interface theme
               </h3>
               <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                Choose from 8 curated studio palettes
+                Choose from 3 curated studio palettes
               </p>
             </div>
             <span
@@ -122,8 +122,8 @@ export function ThemeSwitcherModal({ isOpen, onClose }) {
             </span>
           </div>
 
-          {/* 2-Column Miniature UI Schematic Cards */}
-          <div className="grid grid-cols-2 gap-2.5 max-h-[38vh] overflow-y-auto no-scrollbar py-0.5">
+          {/* 3-Column Single-Row Miniature Schematic Cards */}
+          <div className="grid grid-cols-3 gap-2 py-0.5">
             {themes.map((t) => {
               const isSelected = t.id === themeId;
               return (
@@ -140,44 +140,41 @@ export function ThemeSwitcherModal({ isOpen, onClose }) {
                 >
                   {/* Miniature Schematic UI Window */}
                   <div
-                    className="w-full h-20 p-2 flex flex-col gap-1.5 relative"
+                    className="w-full h-16 p-1.5 flex flex-col gap-1 relative"
                     style={{ backgroundColor: t.preview.bg }}
                   >
-                    {/* Tiny window bar dots */}
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full opacity-70" style={{ backgroundColor: t.preview.bar1 }} />
-                      <span className="w-1.5 h-1.5 rounded-full opacity-55" style={{ backgroundColor: t.preview.bar2 }} />
-                      <span className="w-1.5 h-1.5 rounded-full opacity-40" style={{ backgroundColor: t.preview.bar3 }} />
+                    <div className="flex items-center gap-0.5">
+                      <span className="w-1 h-1 rounded-full opacity-75" style={{ backgroundColor: t.preview.bar1 }} />
+                      <span className="w-1 h-1 rounded-full opacity-55" style={{ backgroundColor: t.preview.bar2 }} />
+                      <span className="w-1 h-1 rounded-full opacity-40" style={{ backgroundColor: t.preview.bar3 }} />
                     </div>
 
-                    {/* Mini sidebar + hero/cards layout */}
-                    <div className="flex-1 flex gap-1.5 min-h-0">
+                    <div className="flex-1 flex gap-1 min-h-0">
                       <div
-                        className="w-6 rounded-md p-1 flex flex-col gap-1"
+                        className="w-4 rounded p-0.5 flex flex-col gap-0.5"
                         style={{
                           backgroundColor: t.preview.sidebar,
                           border: `1px solid ${t.preview.border}`,
                         }}
                       >
-                        <div className="h-1 w-full rounded-full" style={{ backgroundColor: t.preview.bar1 }} />
-                        <div className="h-1 w-3/4 rounded-full opacity-50" style={{ backgroundColor: t.preview.bar3 }} />
-                        <div className="h-1 w-3/4 rounded-full opacity-35" style={{ backgroundColor: t.preview.bar3 }} />
+                        <div className="h-0.5 w-full rounded-full" style={{ backgroundColor: t.preview.bar1 }} />
+                        <div className="h-0.5 w-3/4 rounded-full opacity-50" style={{ backgroundColor: t.preview.bar3 }} />
                       </div>
 
                       <div
-                        className="flex-1 rounded-md p-1.5 flex flex-col justify-between"
+                        className="flex-1 rounded p-1 flex flex-col justify-between"
                         style={{
                           backgroundColor: t.preview.card,
                           border: `1px solid ${t.preview.border}`,
                         }}
                       >
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="h-1.5 w-10 rounded-full" style={{ backgroundColor: t.preview.bar1 }} />
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.preview.bar2 }} />
+                        <div className="flex items-center justify-between gap-0.5">
+                          <div className="h-1 w-6 rounded-full" style={{ backgroundColor: t.preview.bar1 }} />
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: t.preview.bar2 }} />
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <div className="h-1.5 w-full rounded-full opacity-75" style={{ backgroundColor: t.preview.bar2 }} />
-                          <div className="h-1.5 w-2/3 rounded-full opacity-40" style={{ backgroundColor: t.preview.bar3 }} />
+                        <div className="flex flex-col gap-0.5">
+                          <div className="h-1 w-full rounded-full opacity-75" style={{ backgroundColor: t.preview.bar2 }} />
+                          <div className="h-1 w-2/3 rounded-full opacity-40" style={{ backgroundColor: t.preview.bar3 }} />
                         </div>
                       </div>
                     </div>
@@ -185,30 +182,30 @@ export function ThemeSwitcherModal({ isOpen, onClose }) {
 
                   {/* Card Footer */}
                   <div
-                    className="flex items-center justify-between px-2.5 py-2 border-t gap-1.5"
+                    className="flex items-center justify-between px-2 py-2 border-t gap-1"
                     style={{ borderColor: 'var(--border-color)' }}
                   >
                     <div className="min-w-0">
                       <p
-                        className="text-[11px] font-bold truncate"
+                        className="text-[10px] font-bold leading-tight truncate"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         {t.name}
                       </p>
-                      <p className="text-[9px] truncate" style={{ color: 'var(--text-muted)' }}>
+                      <p className="text-[8.5px] truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         {t.inspiration}
                       </p>
                     </div>
 
                     <div
-                      className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
                       style={{
                         backgroundColor: isSelected ? 'var(--accent)' : 'transparent',
                         border: isSelected ? 'none' : '1.5px solid var(--border-strong)',
                         color: 'var(--text-on-accent)',
                       }}
                     >
-                      {isSelected && <Check size={10} strokeWidth={3} />}
+                      {isSelected && <Check size={9} strokeWidth={3} />}
                     </div>
                   </div>
                 </button>
@@ -327,7 +324,7 @@ export function ThemeSwitcherModal({ isOpen, onClose }) {
             }}
           >
             <span
-              className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded-full shadow-sm transition-transform ${
+              className={`w-[18px] h-[18px] rounded-full shadow-sm transition-transform ${
                 glassMode ? 'translate-x-5' : 'translate-x-0'
               }`}
               style={{
