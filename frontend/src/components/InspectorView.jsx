@@ -429,7 +429,10 @@ export function InspectorView({
             errorMsg.toLowerCase().includes('age') ||
             errorMsg.toLowerCase().includes('restricted') ||
             errorMsg.toLowerCase().includes('private') ||
-            errorMsg.toLowerCase().includes('bot')) && (
+            errorMsg.toLowerCase().includes('bot') ||
+            errorMsg.toLowerCase().includes('cookie') ||
+            errorMsg.toLowerCase().includes('429') ||
+            errorMsg.toLowerCase().includes('403')) && (
             <button
               type="button"
               onClick={() => setIsCookieModalOpen(true)}

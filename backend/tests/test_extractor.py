@@ -286,4 +286,88 @@ def test_discover_nested_iframe_embed():
         assert res["headers"]["Referer"] == "https://example.com/embed/player-42"
 
 
+def test_extract_video_info_proxy_env(monkeypatch):
+    mock_payload = {
+        "webpage_url": "https://example.com/watch?v=proxy",
+        "title": "Proxied Clip",
+        "formats": [],
+    }
+    monkeypatch.delenv("YTDLP_PROXY", raising=False)
+    monkeypatch.delenv("CRYSTAL_PROXY", raising=False)
+
+    with patch("yt_dlp.YoutubeDL") as mock_ydl_cls:
+        mock_ydl = mock_ydl_cls.return_value.__enter__.return_value
+        mock_ydl.extract_info.return_value = mock_payload
+        extract_video_info("https://example.com/watch?v=proxy")
+        call_opts_no_proxy = mock_ydl_cls.call_args[0][0]
+        assert "proxy" not in call_opts_no_proxy
+
+    monkeypatch.setenv("YTDLP_PROXY", "socks5h://user:pass@127.0.0.1:9050")
+    with patch("yt_dlp.YoutubeDL") as mock_ydl_cls:
+        mock_ydl = mock_ydl_cls.return_value.__enter__.return_value
+        mock_ydl.extract_info.return_value = mock_payload
+        extract_video_info("https://example.com/watch?v=proxy")
+        call_opts_with_proxy = mock_ydl_cls.call_args[0][0]
+        assert call_opts_with_proxy["proxy"] == "socks5h://user:pass@127.0.0.1:9050"
+
+
+def test_discover_media_from_page_forwards_proxy(monkeypatch):
+    from app.services.patches import discover_media_from_page
+
+    captured_kwargs = []
+
+    class DummyClient:
+        def __init__(self, **kwargs):
+            captured_kwargs.append(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def get(self, url):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.url = url
+            resp.text = '<video><source src="https://cdn.example.com/clip.mp4"></video>'
+            return resp
+
+    monkeypatch.setenv("YTDLP_PROXY", "http://proxy.local:8080")
+    with patch("app.services.patches.httpx.Client", side_effect=DummyClient):
+        res = discover_media_from_page("https://example.com/watch")
+        assert res is not None
+        assert captured_kwargs[-1]["proxy"] == "http://proxy.local:8080"
+
+    monkeypatch.delenv("YTDLP_PROXY", raising=False)
+    monkeypatch.delenv("CRYSTAL_PROXY", raising=False)
+    with patch("app.services.patches.httpx.Client", side_effect=DummyClient):
+        discover_media_from_page("https://example.com/watch")
+        assert "proxy" not in captured_kwargs[-1]
+
+
+def test_format_extraction_error_classification():
+    from app.services.errors import format_extraction_error
+
+    assert format_extraction_error(
+        "\x1b[0;31mERROR:\x1b[0m [PornHub] 123: This content is unavailable in your country"
+    ).startswith("Geo-restricted in the server region.")
+
+    assert format_extraction_error(
+        "[PornHub] xyz: Redirection detected; the video may be deleted or require login"
+    ).startswith("Geo-restricted in the server region.")
+
+    assert "HTTP 429" in format_extraction_error("ERROR: HTTP Error 429: Too Many Requests")
+    assert "session cookies" in format_extraction_error("Sign in to confirm your age")
+    assert "HTTP 403 / bot check" in format_extraction_error("ERROR: HTTP Error 403: Forbidden")
+    assert "unavailable or has been removed" in format_extraction_error("ERROR: Video unavailable")
+
+    redacted = format_extraction_error("Unable to reach http://alice:supersecret@proxy.example.com:8080")
+    assert "supersecret" not in redacted
+    assert "http://***@proxy.example.com:8080" in redacted
+
+    assert format_extraction_error(RuntimeError("Extraction failed")) == "Extraction failed"
+
+
+
 

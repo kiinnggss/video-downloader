@@ -41,6 +41,7 @@ class DownloadTask(BaseModel):
     file_id: Optional[str] = None
     filename: Optional[str] = None
     device_id: Optional[str] = None
+    error_message: Optional[str] = None
 
 class MediaFile(BaseModel):
     file_id: str

@@ -7,6 +7,7 @@ import httpx
 from yt_dlp.extractor.peekvids import PlayVidsIE
 from yt_dlp.extractor import lazy_extractors
 from yt_dlp.utils import parse_duration, merge_dicts
+from app.config import get_ytdlp_proxy
 
 AD_DOMAINS = {
     "adtng.com",
@@ -285,7 +286,11 @@ def discover_media_from_page(
         headers.update(custom_headers)
 
     try:
-        with httpx.Client(timeout=6.0, follow_redirects=True, headers=headers) as client:
+        client_kwargs = {"timeout": 6.0, "follow_redirects": True, "headers": headers}
+        proxy = get_ytdlp_proxy()
+        if proxy:
+            client_kwargs["proxy"] = proxy
+        with httpx.Client(**client_kwargs) as client:
             resp = client.get(page_url)
             if resp.status_code != 200:
                 return None

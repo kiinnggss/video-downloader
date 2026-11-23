@@ -439,6 +439,26 @@ async def test_keep_alive_endpoint():
         assert "timestamp" in data
 
 
+async def test_inspect_endpoint_formats_geo_error():
+    with patch(
+        "app.main.extract_video_info",
+        side_effect=RuntimeError("ERROR: [PornHub] xyz: This content is unavailable in your country"),
+    ):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            res = await ac.post("/api/inspect", json={"url": "https://www.pornhub.com/view_video.php?viewkey=xyz"})
+            assert res.status_code == 422
+            assert "Geo-restricted in the server region" in res.json()["detail"]
+
+
+async def test_inspect_endpoint_drm_stays_403():
+    with patch("app.main.extract_video_info", side_effect=RuntimeError("DRM protected Widevine stream")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            res = await ac.post("/api/inspect", json={"url": "https://example.com/drm"})
+            assert res.status_code == 403
+            assert "DRM-protected" in res.json()["detail"]
+
+
+
 
 
 

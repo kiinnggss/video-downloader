@@ -419,3 +419,128 @@ def test_pause_resume_cancel_controls(test_db):
     assert get_controller(task_id) is None
 
 
+def test_run_download_thread_error_saves_message_and_cleans_partials(test_db, tmp_path, monkeypatch):
+    import app.services.downloader as dl_mod
+
+    monkeypatch.setattr(dl_mod, "PUBLIC_STORAGE", tmp_path)
+    videos_dir = tmp_path / "videos"
+    videos_dir.mkdir(parents=True, exist_ok=True)
+    task_id = "task-err-geo-1"
+    partial_file = videos_dir / f"partial-{task_id[:8]}.mp4.part"
+    partial_file.write_bytes(b"incomplete")
+
+    req = DownloadRequest(
+        url="https://www.pornhub.com/view_video.php?viewkey=ph123",
+        format_id="best",
+        is_audio=False,
+        in_vault=False,
+    )
+
+    class GeoFailingYoutubeDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def extract_info(self, url, download=True):
+            raise RuntimeError("ERROR: [PornHub] ph123: This content is unavailable in your country")
+
+    with patch("yt_dlp.YoutubeDL", side_effect=GeoFailingYoutubeDL), \
+         patch("app.services.patches.discover_media_from_page", return_value=None):
+        run_download_thread(task_id, req, db_path=test_db)
+
+    failed_task = get_task(task_id, db_path=test_db)
+    assert failed_task is not None
+    assert failed_task.status == "error"
+    assert failed_task.title == "Download Failed"
+    assert failed_task.error_message is not None
+    assert failed_task.error_message.startswith("Geo-restricted in the server region.")
+    assert not partial_file.exists()
+
+
+def test_run_download_thread_mp4_merge_proxy_and_filepath_resolution(test_db, tmp_path, monkeypatch):
+    monkeypatch.setenv("YTDLP_PROXY", "http://user:pass@10.0.0.2:3128")
+    merged_mp4 = tmp_path / "merged_out.mp4"
+    merged_mp4.write_bytes(b"mp4bytes")
+
+    captured_opts = {}
+
+    class MockMergeYoutubeDL:
+        def __init__(self, opts):
+            captured_opts.update(opts)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def extract_info(self, url, download=True):
+            return {
+                "title": "Merged Video",
+                "duration": 25,
+                "requested_downloads": [{"filepath": str(merged_mp4)}],
+            }
+
+        def prepare_filename(self, info):
+            return str(tmp_path / "merged_out.webm")
+
+    req = DownloadRequest(
+        url="https://example.com/v",
+        format_id="137",
+        is_audio=False,
+        in_vault=False,
+    )
+    with patch("yt_dlp.YoutubeDL", side_effect=MockMergeYoutubeDL):
+        run_download_thread("task-merge-1", req, db_path=test_db)
+
+    assert captured_opts["merge_output_format"] == "mp4"
+    assert captured_opts["format"].startswith("137[acodec=none]+bestaudio")
+    assert captured_opts["proxy"] == "http://user:pass@10.0.0.2:3128"
+
+    files = list_media_files(category="video", in_vault=False, db_path=test_db)
+    assert len(files) == 1
+    assert files[0].filename == "merged_out.mp4"
+    assert files[0].filesize == 8
+
+
+def test_run_download_thread_disk_mp4_fallback_when_requested_downloads_absent(test_db, tmp_path):
+    disk_mp4 = tmp_path / "fallback_clip.mp4"
+    disk_mp4.write_bytes(b"fallback-mp4")
+
+    class MockDiskFallbackYoutubeDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def extract_info(self, url, download=True):
+            return {"title": "Fallback MP4", "duration": 10}
+
+        def prepare_filename(self, info):
+            return str(tmp_path / "fallback_clip.webm")
+
+    req = DownloadRequest(
+        url="https://example.com/fallback-mp4",
+        format_id="best",
+        is_audio=False,
+        in_vault=False,
+    )
+    with patch("yt_dlp.YoutubeDL", side_effect=MockDiskFallbackYoutubeDL):
+        run_download_thread("task-disk-mp4", req, db_path=test_db)
+
+    files = list_media_files(category="video", in_vault=False, db_path=test_db)
+    assert len(files) == 1
+    assert files[0].filename == "fallback_clip.mp4"
+    assert files[0].filesize == len(b"fallback-mp4")
+
+
+

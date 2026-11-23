@@ -25,7 +25,9 @@ def init_db(db_path: str = None):
                 eta_seconds INTEGER,
                 in_vault INTEGER DEFAULT 0,
                 file_id TEXT,
-                filename TEXT
+                filename TEXT,
+                device_id TEXT,
+                error_message TEXT
             )
         """)
         try:
@@ -38,6 +40,10 @@ def init_db(db_path: str = None):
             pass
         try:
             conn.execute("ALTER TABLE tasks ADD COLUMN device_id TEXT")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE tasks ADD COLUMN error_message TEXT")
         except sqlite3.OperationalError:
             pass
         conn.execute("""
@@ -86,12 +92,12 @@ def save_task(task: DownloadTask, db_path: str = None):
     with conn:
         conn.execute("""
             INSERT OR REPLACE INTO tasks 
-            (task_id, url, title, status, progress, speed, downloaded_bytes, total_bytes, eta_seconds, in_vault, file_id, filename, device_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (task_id, url, title, status, progress, speed, downloaded_bytes, total_bytes, eta_seconds, in_vault, file_id, filename, device_id, error_message)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             task.task_id, task.url, task.title, task.status, task.progress, task.speed,
             task.downloaded_bytes, task.total_bytes, task.eta_seconds, 1 if task.in_vault else 0,
-            task.file_id, task.filename, task.device_id
+            task.file_id, task.filename, task.device_id, task.error_message
         ))
     conn.close()
 
@@ -118,6 +124,7 @@ def get_task(task_id: str, db_path: str = None) -> Optional[DownloadTask]:
         file_id=row["file_id"] if "file_id" in keys else None,
         filename=row["filename"] if "filename" in keys else None,
         device_id=row["device_id"] if "device_id" in keys else None,
+        error_message=row["error_message"] if "error_message" in keys else None,
     )
 
 def save_media_file(media: MediaFile, db_path: str = None):
@@ -226,6 +233,7 @@ def list_tasks(device_id: Optional[str] = None, limit: int = 20, db_path: str = 
                 file_id=row["file_id"] if "file_id" in keys else None,
                 filename=row["filename"] if "filename" in keys else None,
                 device_id=row["device_id"] if "device_id" in keys else None,
+                error_message=row["error_message"] if "error_message" in keys else None,
             )
         )
     return results

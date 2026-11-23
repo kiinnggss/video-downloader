@@ -33,6 +33,7 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
       activeTask.status === 'paused' ||
       activeTask.status === 'queued');
   const isTaskFinished = activeTask && activeTask.status === 'finished' && activeTask.file_id;
+  const isTaskFailed = activeTask && activeTask.status === 'error';
 
   const pastTasks = historyTasks.filter((t) => !activeTask || t.task_id !== activeTask.task_id);
 
@@ -176,8 +177,48 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
         </div>
       )}
 
+      {/* Newly Failed Active Card */}
+      {isTaskFailed && (
+        <div className="surface-card p-4 border-rose-400/70 flex flex-col gap-3 animate-fade-in">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  backgroundColor: 'rgba(244, 63, 94, 0.14)',
+                  color: '#E11D48',
+                }}
+              >
+                <AlertCircle size={20} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-extrabold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {activeTask.title || 'Download Failed'}
+                </h4>
+                <p className="text-xs text-rose-500 mt-1 leading-relaxed break-words">
+                  {activeTask.error_message || 'Transfer could not complete.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRetry(activeTask)}
+              disabled={retryingId === activeTask.task_id}
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 spring-press theme-btn-primary"
+            >
+              {retryingId === activeTask.task_id ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <RotateCw size={12} />
+              )}
+              <span>Retry</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Empty State when nothing active and no history */}
-      {!isTaskActive && !isTaskFinished && pastTasks.length === 0 && (
+      {!isTaskActive && !isTaskFinished && !isTaskFailed && pastTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center p-9 text-center surface-card gap-3.5">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center"
@@ -265,6 +306,11 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
                         <span className="uppercase font-bold">{task.status}</span>
                         {Number(sizeMb) > 0 && <span>{sizeMb} MB</span>}
                       </div>
+                      {task.status === 'error' && task.error_message && (
+                        <p className="text-[11px] text-rose-500 mt-1 leading-snug break-words">
+                          {task.error_message}
+                        </p>
+                      )}
                     </div>
                   </div>
 

@@ -27,6 +27,7 @@ from app.services.vault import (
     verify_vault_token,
 )
 from app.services.cookies import save_cookie_content, clear_cookies, has_cookies
+from app.services.errors import format_extraction_error
 from app.services.patches import apply_extractor_patches
 from app.db import (
     init_db,
@@ -62,7 +63,7 @@ app.add_middleware(
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "build": "v5-themes-studio"}
+    return {"status": "ok", "build": "v6-resilient-pipeline"}
 
 
 @app.get("/api/keepalive")
@@ -79,7 +80,7 @@ def inspect_url(req: InspectRequest, x_device_id: Optional[str] = Header(None, a
         err_msg = str(e)
         if "drm" in err_msg.lower() or "widevine" in err_msg.lower() or "encrypted" in err_msg.lower():
             raise HTTPException(status_code=403, detail="Stream is DRM-protected and cannot be extracted")
-        raise HTTPException(status_code=422, detail=f"Failed to inspect URL: {err_msg}")
+        raise HTTPException(status_code=422, detail=f"Failed to inspect URL: {format_extraction_error(e)}")
 
 
 @app.get("/api/downloads")

@@ -1,4 +1,5 @@
 import os
+import shutil
 import uuid
 import time
 import threading
@@ -8,8 +9,9 @@ from typing import Dict, Any, AsyncGenerator, Optional
 import yt_dlp
 from app.models import DownloadRequest, DownloadTask, MediaFile
 from app.db import save_task, save_media_file, get_task
-from app.config import PUBLIC_STORAGE, VAULT_STORAGE, DB_PATH
+from app.config import PUBLIC_STORAGE, VAULT_STORAGE, DB_PATH, get_ytdlp_proxy
 from app.services.cookies import get_cookie_path
+from app.services.errors import format_extraction_error
 from app.services.patches import apply_extractor_patches, discover_media_from_page
 
 apply_extractor_patches()
@@ -114,6 +116,36 @@ def calculate_progress(downloaded: int, total: int) -> float:
     if not total or total <= 0:
         return 0.0
     return round((downloaded / total) * 100, 1)
+
+
+def _build_video_format_selector(format_id: str) -> str:
+    """Build a format selector preferring MP4/m4a streams before general fallbacks."""
+    if format_id and format_id != "best":
+        return (
+            f"{format_id}[acodec=none]+bestaudio[ext=m4a]/"
+            f"{format_id}[acodec=none]+bestaudio/"
+            f"{format_id}/bestvideo+bestaudio/best"
+        )
+    return "bestvideo+bestaudio/best"
+
+
+def _resolve_downloaded_filepath(ydl, info: Dict[str, Any], is_audio: bool) -> str:
+    """Resolve the final merged or converted file path produced by yt-dlp and ffmpeg."""
+    filename = ydl.prepare_filename(info)
+    req_dls = info.get("requested_downloads") or []
+    if isinstance(req_dls, list) and req_dls and isinstance(req_dls[0], dict) and req_dls[0].get("filepath"):
+        filename = req_dls[0]["filepath"]
+
+    if is_audio:
+        if not str(filename).lower().endswith(".mp3"):
+            filename = str(filename).rsplit(".", 1)[0] + ".mp3"
+    else:
+        if not os.path.exists(str(filename)):
+            mp4_candidate = str(Path(filename).with_suffix(".mp4"))
+            if os.path.exists(mp4_candidate):
+                filename = mp4_candidate
+
+    return str(filename)
 
 def broadcast_telemetry(payload: Dict[str, Any]):
     with lock:
@@ -240,8 +272,11 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             }
         },
     }
+    proxy = get_ytdlp_proxy()
     if cookie_file:
         ydl_opts["cookiefile"] = cookie_file
+    if proxy:
+        ydl_opts["proxy"] = proxy
 
     try:
         from yt_dlp.networking.impersonate import ImpersonateTarget
@@ -257,14 +292,15 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             "preferredquality": "192",
         }]
     else:
-        ydl_opts["format"] = f"{req.format_id}+bestaudio/best/{req.format_id}/b/best" if req.format_id != "best" else "b/best"
+        ydl_opts["format"] = _build_video_format_selector(req.format_id)
+        ydl_opts["merge_output_format"] = "mp4"
 
     try:
         info = None
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(req.url, download=True) or {}
-                filename = ydl.prepare_filename(info)
+                filename = _resolve_downloaded_filepath(ydl, info, req.is_audio)
         except Exception as dl_err:
             discovered = discover_media_from_page(req.url)
             if discovered and discovered.get("stream_url"):
@@ -275,11 +311,11 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
                     try:
                         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                             info = ydl.extract_info(stream_url, download=True) or {}
-                            filename = ydl.prepare_filename(info)
                             if not info.get("title") or info.get("title") in ("master", "index", "playlist"):
                                 info["title"] = discovered.get("title") or "Downloaded Video"
                             if not info.get("thumbnail"):
                                 info["thumbnail"] = discovered.get("thumbnail")
+                            filename = _resolve_downloaded_filepath(ydl, info, req.is_audio)
                             last_sub_err = None
                             break
                     except Exception as sub_err:
@@ -290,9 +326,6 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             else:
                 raise dl_err
 
-        if req.is_audio:
-            filename = str(filename).rsplit(".", 1)[0] + ".mp3"
-        
         filepath_str = str(filename)
         filesize = int(info.get("filesize") or 0)
         if not filesize and os.path.exists(filepath_str):
@@ -359,9 +392,11 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
             total_bytes=0,
             in_vault=req.in_vault,
             device_id=req.device_id,
+            error_message=format_extraction_error(e),
         )
         save_task(failed_task, db_path=db_path)
         broadcast_telemetry(failed_task.model_dump())
+        cleanup_partial_files(target_dir, task_id)
     finally:
         remove_controller(task_id)
 
@@ -420,8 +455,11 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
         },
         "js_runtimes": {"node": {}},
     }
+    proxy = get_ytdlp_proxy()
     if cookie_file:
         ydl_opts["cookiefile"] = cookie_file
+    if proxy:
+        ydl_opts["proxy"] = proxy
 
     try:
         from yt_dlp.networking.impersonate import ImpersonateTarget
@@ -465,7 +503,10 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
         try:
-            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=60.0) as client:
+            client_kwargs = {"headers": headers, "follow_redirects": True, "timeout": 60.0}
+            if proxy:
+                client_kwargs["proxy"] = proxy
+            async with httpx.AsyncClient(**client_kwargs) as client:
                 async with client.stream("GET", direct_url) as resp:
                     ctype = resp.headers.get("content-type", "").lower()
                     if resp.status_code == 200 and not ctype.startswith("text/"):
@@ -478,12 +519,13 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
 
     # If direct stream is unavailable or failed validation, download to temporary verified container
     ext = "mp3" if is_audio else "mp4"
-    with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as tmp:
-        temp_file_path = Path(tmp.name)
+    tmp_dir = Path(tempfile.mkdtemp(prefix="crystal_stream_"))
+    outtmpl = str(tmp_dir / "media.%(ext)s")
 
     try:
         download_opts = {
-            "outtmpl": str(temp_file_path),
+            "outtmpl": outtmpl,
+            "overwrites": True,
             "quiet": True,
             "no_warnings": True,
             "concurrent_fragment_downloads": 8,
@@ -499,6 +541,8 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
         }
         if cookie_file:
             download_opts["cookiefile"] = cookie_file
+        if proxy:
+            download_opts["proxy"] = proxy
         try:
             from yt_dlp.networking.impersonate import ImpersonateTarget
             download_opts["impersonate"] = ImpersonateTarget.from_str("chrome")
@@ -513,7 +557,8 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
                 "preferredquality": "192",
             }]
         else:
-            download_opts["format"] = f"{format_id}+bestaudio/best/{format_id}/b/best" if format_id != "best" else "b/best"
+            download_opts["format"] = _build_video_format_selector(format_id)
+            download_opts["merge_output_format"] = "mp4"
 
         def run_dl():
             try:
@@ -522,29 +567,48 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
             except Exception as dl_err:
                 discovered = discover_media_from_page(url)
                 if discovered and discovered.get("stream_url"):
-                    stream_url = discovered["stream_url"]
+                    candidates = discovered.get("candidate_streams") or [discovered["stream_url"]]
                     download_opts["http_headers"] = discovered.get("headers", download_opts.get("http_headers", {}))
-                    with yt_dlp.YoutubeDL(download_opts) as ydl:
-                        ydl.download([stream_url])
+                    last_sub_err = dl_err
+                    for stream_url in candidates:
+                        try:
+                            with yt_dlp.YoutubeDL(download_opts) as ydl:
+                                ydl.download([stream_url])
+                            last_sub_err = None
+                            break
+                        except Exception as sub_err:
+                            last_sub_err = sub_err
+                            continue
+                    if last_sub_err is not None:
+                        raise last_sub_err
                 else:
                     raise dl_err
 
         await asyncio.to_thread(run_dl)
 
-        # Stream verified file
-        if temp_file_path.exists() and temp_file_path.stat().st_size > 0:
-            with open(temp_file_path, "rb") as f:
+        # Stream verified file from isolated temporary directory
+        preferred_path = tmp_dir / f"media.{ext}"
+        stream_file = None
+        if preferred_path.exists() and preferred_path.stat().st_size > 0:
+            stream_file = preferred_path
+        else:
+            candidates = [
+                p
+                for p in tmp_dir.iterdir()
+                if p.is_file() and p.suffix.lower() not in {".part", ".ytdl"} and p.stat().st_size > 0
+            ]
+            if candidates:
+                stream_file = max(candidates, key=lambda p: p.stat().st_size)
+
+        if stream_file is not None:
+            with open(stream_file, "rb") as f:
                 while True:
                     chunk = await asyncio.to_thread(f.read, 131072)
                     if not chunk:
                         break
                     yield chunk
     finally:
-        if temp_file_path.exists():
-            try:
-                temp_file_path.unlink()
-            except OSError:
-                pass
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 get_telemetry_stream = subscribe_telemetry

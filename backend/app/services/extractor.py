@@ -1,6 +1,7 @@
 import yt_dlp
 import httpx
 from typing import Dict, Any, List, Optional
+from app.config import get_ytdlp_proxy
 from app.models import InspectResponse, FormatOption
 
 def probe_format_size(vf: Dict[str, Any], duration: int = 0) -> Optional[int]:
@@ -33,7 +34,11 @@ def probe_format_size(vf: Dict[str, Any], duration: int = 0) -> Optional[int]:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
         try:
-            with httpx.Client(timeout=2.0, follow_redirects=True, headers=headers) as client:
+            client_kwargs = {"timeout": 2.0, "follow_redirects": True, "headers": headers}
+            proxy = get_ytdlp_proxy()
+            if proxy:
+                client_kwargs["proxy"] = proxy
+            with httpx.Client(**client_kwargs) as client:
                 resp = client.head(stream_url)
                 ctype = resp.headers.get("content-type", "").lower()
                 if "mpegurl" not in ctype and not ctype.startswith("text/"):
@@ -69,7 +74,11 @@ def resolve_redirects(url: str) -> str:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
             }
-            with httpx.Client(timeout=3.5, follow_redirects=True, headers=headers) as client:
+            client_kwargs = {"timeout": 3.5, "follow_redirects": True, "headers": headers}
+            proxy = get_ytdlp_proxy()
+            if proxy:
+                client_kwargs["proxy"] = proxy
+            with httpx.Client(**client_kwargs) as client:
                 resp = client.head(url)
                 return str(resp.url)
         except Exception:
@@ -181,6 +190,9 @@ def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResp
     }
     if cookie_file:
         ydl_opts["cookiefile"] = cookie_file
+    proxy = get_ytdlp_proxy()
+    if proxy:
+        ydl_opts["proxy"] = proxy
 
     try:
         from yt_dlp.networking.impersonate import ImpersonateTarget

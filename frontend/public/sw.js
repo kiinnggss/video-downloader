@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crystal-cache-v6';
+const CACHE_NAME = 'crystal-cache-v7';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
