@@ -109,7 +109,7 @@ app.add_middleware(
 def healthz():
     return {
         "status": "ok",
-        "build": "v4-bento-telemetry-vault",
+        "build": "v5-themes-studio",
         "last_self_ping": _last_ping_ts,
     }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crystal-cache-v4';
+const CACHE_NAME = 'crystal-cache-v5';
 let swKeepAliveTimer = null;
 
 function pingServerKeepAlive() {
