@@ -6,46 +6,49 @@
   --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-fluid: cubic-bezier(0.23, 1, 0.32, 1);
 
-  /* Default Soul Velvet fallback before ThemeProvider mounts */
-  --bg-canvas: #C8B1AF;
-  --bg-surface: #F0E6E5;
-  --bg-surface-elevated: #F7F0EF;
-  --bg-surface-muted: #DFCECC;
-  --bg-input: #F7F0EF;
-  --bg-hero: #E6D5D3;
-  --text-on-hero: #23252A;
-  --text-on-hero-muted: #4B4344;
-  --canvas-text: #23252A;
-  --canvas-text-muted: #463C3C;
-  --text-primary: #23252A;
-  --text-secondary: #4B4344;
-  --text-muted: #6E6060;
-  --accent: #23252A;
-  --accent-hover: #16181C;
-  --accent-soft: rgba(35, 37, 42, 0.10);
-  --accent-text: #181A1E;
-  --text-on-accent: #F7F0EF;
-  --accent-secondary: #A63D33;
-  --accent-secondary-soft: rgba(166, 61, 51, 0.14);
-  --accent-secondary-text: #852D24;
-  --accent-vault: #8F342B;
-  --accent-vault-soft: rgba(143, 52, 43, 0.14);
-  --accent-vault-text: #6E241D;
-  --border-color: rgba(35, 37, 42, 0.18);
-  --border-strong: rgba(35, 37, 42, 0.34);
+  /* Default Crystal Slate fallback before ThemeProvider mounts */
+  --bg-canvas: #F3F5F8;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-muted: #E9EEF5;
+  --bg-input: #F8FAFC;
+  --bg-hero: #FFFFFF;
+  --text-on-hero: #0F172A;
+  --text-on-hero-muted: #475569;
+  --canvas-text: #0F172A;
+  --canvas-text-muted: #475569;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-soft: rgba(37, 99, 235, 0.11);
+  --accent-text: #1D4ED8;
+  --text-on-accent: #FFFFFF;
+  --accent-secondary: #0284C7;
+  --accent-secondary-soft: rgba(2, 132, 199, 0.12);
+  --accent-secondary-text: #0369A1;
+  --accent-vault: #7C3AED;
+  --accent-vault-soft: rgba(124, 58, 237, 0.12);
+  --accent-vault-text: #6D28D9;
+  --error-bg: #FEF2F2;
+  --error-border: #FCA5A5;
+  --error-text: #B91C1C;
+  --border-color: rgba(15, 23, 42, 0.10);
+  --border-strong: rgba(15, 23, 42, 0.22);
   --border-width: 1px;
-  --radius-card: 18px;
-  --radius-button: 14px;
+  --radius-card: 16px;
+  --radius-button: 12px;
   --radius-pill: 9999px;
-  --shadow-card: 0 14px 32px -12px rgba(45, 29, 28, 0.16);
-  --shadow-elevated: 0 22px 46px -12px rgba(35, 24, 24, 0.24);
-  --shadow-button: 0 8px 18px -6px rgba(35, 37, 42, 0.35);
-  --dock-bg: rgba(232, 217, 215, 0.94);
-  --dock-pill-bg: #FAF5F4;
-  --dock-border: rgba(35, 37, 42, 0.16);
-  --dock-shadow: 0 18px 40px -10px rgba(35, 24, 24, 0.22), 0 0 0 4px rgba(247, 240, 239, 0.45);
-  --dock-icon-inactive: #615454;
-  --font-display: 'Playfair Display', Georgia, serif;
+  --shadow-card: 0 10px 26px -12px rgba(15, 23, 42, 0.10);
+  --shadow-elevated: 0 18px 36px -12px rgba(15, 23, 42, 0.16);
+  --shadow-button: 0 6px 16px -6px rgba(37, 99, 235, 0.42);
+  --dock-bg: rgba(255, 255, 255, 0.92);
+  --dock-pill-bg: #F1F5F9;
+  --dock-border: rgba(15, 23, 42, 0.10);
+  --dock-shadow: 0 14px 32px -10px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  --dock-icon-inactive: #64748B;
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -150,6 +153,13 @@ body {
     color: var(--text-muted);
     box-shadow: none;
     cursor: not-allowed;
+  }
+
+  .surface-error {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+    border: var(--border-width) solid var(--error-border);
+    border-radius: var(--radius-card);
   }
 
   /* Dark telemetry fallback alias */

@@ -108,18 +108,10 @@ function CrystalShell() {
             activeTask={activeTask}
             onGoToHome={() => setTab('home')}
             onGoToFiles={() => setTab('files')}
-            onOpenThemeModal={() => setIsThemeModalOpen(true)}
           />
         )}
-        {tab === 'files' && (
-          <FilesView
-            activeTask={activeTask}
-            onOpenThemeModal={() => setIsThemeModalOpen(true)}
-          />
-        )}
-        {tab === 'vault' && (
-          <VaultView onOpenThemeModal={() => setIsThemeModalOpen(true)} />
-        )}
+        {tab === 'files' && <FilesView activeTask={activeTask} />}
+        {tab === 'vault' && <VaultView />}
       </main>
 
       {/* Floating mini download banner when on other screens */}

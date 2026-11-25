@@ -5,7 +5,6 @@ import {
   Sparkles,
   Folder,
   ArrowRight,
-  Palette,
   RotateCw,
   AlertCircle,
   Loader2,
@@ -13,7 +12,7 @@ import {
 import { apiClient } from '../api/client';
 import { ActiveDownloadCard } from './ActiveDownloadCard';
 
-export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenThemeModal }) {
+export function DownloadsView({ activeTask, onGoToHome, onGoToFiles }) {
   const [historyTasks, setHistoryTasks] = useState([]);
   const [retryingId, setRetryingId] = useState(null);
   const [retryError, setRetryError] = useState('');
@@ -57,7 +56,7 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fade-in">
+    <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-5 pb-28 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -65,35 +64,11 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
             className="font-display text-xl font-extrabold tracking-tight"
             style={{ color: 'var(--canvas-text)' }}
           >
-            Downloads
+            Transfers
           </h2>
           <p className="text-xs" style={{ color: 'var(--canvas-text-muted)' }}>
-            In-progress queue & transfer history
+            Active queue and transfer history
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {onOpenThemeModal && (
-            <button
-              type="button"
-              onClick={onOpenThemeModal}
-              className="p-2.5 surface-card spring-press"
-              style={{ borderRadius: 'var(--radius-button)', color: 'var(--accent-text)' }}
-              aria-label="Open theme switcher"
-              title="Appearance"
-            >
-              <Palette size={16} />
-            </button>
-          )}
-          <div
-            className="w-10 h-10 surface-card flex items-center justify-center"
-            style={{
-              borderRadius: 'var(--radius-button)',
-              color: 'var(--accent-secondary-text)',
-            }}
-          >
-            <ArrowDownCircle size={20} />
-          </div>
         </div>
       </div>
 
@@ -179,23 +154,23 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
 
       {/* Newly Failed Active Card */}
       {isTaskFailed && (
-        <div className="surface-card p-4 border-rose-400/70 flex flex-col gap-3 animate-fade-in">
+        <div className="surface-error p-4 flex flex-col gap-3 animate-fade-in">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{
-                  backgroundColor: 'rgba(244, 63, 94, 0.14)',
-                  color: '#E11D48',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--error-text)',
                 }}
               >
                 <AlertCircle size={20} />
               </div>
               <div className="min-w-0">
-                <h4 className="font-extrabold text-sm" style={{ color: 'var(--text-primary)' }}>
+                <h4 className="font-extrabold text-sm" style={{ color: 'var(--error-text)' }}>
                   {activeTask.title || 'Download Failed'}
                 </h4>
-                <p className="text-xs text-rose-500 mt-1 leading-relaxed break-words">
+                <p className="text-xs mt-1 leading-relaxed break-words" style={{ color: 'var(--error-text)' }}>
                   {activeTask.error_message || 'Transfer could not complete.'}
                 </p>
               </div>
@@ -262,7 +237,7 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
           </div>
 
           {retryError && (
-            <div className="p-3 surface-card border-rose-400/70 text-xs text-rose-500 flex items-center gap-2">
+            <div className="p-3 surface-error text-xs flex items-center gap-2 font-semibold">
               <AlertCircle size={14} />
               <span>{retryError}</span>
             </div>
@@ -307,7 +282,7 @@ export function DownloadsView({ activeTask, onGoToHome, onGoToFiles, onOpenTheme
                         {Number(sizeMb) > 0 && <span>{sizeMb} MB</span>}
                       </div>
                       {task.status === 'error' && task.error_message && (
-                        <p className="text-[11px] text-rose-500 mt-1 leading-snug break-words">
+                        <p className="text-xs mt-1 leading-snug break-words" style={{ color: 'var(--error-text)' }}>
                           {task.error_message}
                         </p>
                       )}

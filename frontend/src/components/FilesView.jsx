@@ -10,14 +10,13 @@ import {
   LayoutGrid,
   List,
   Shield,
-  Palette,
   Check,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { ActiveDownloadCard } from './ActiveDownloadCard';
 import { MediaPlayerModal } from './MediaPlayerModal';
 
-export function FilesView({ activeTask, onOpenThemeModal }) {
+export function FilesView({ activeTask }) {
   const [tab, setTab] = useState('all');
   const [viewMode, setViewMode] = useState('list');
   const [files, setFiles] = useState([]);
@@ -87,7 +86,7 @@ export function FilesView({ activeTask, onOpenThemeModal }) {
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4 pt-5 pb-28 animate-fade-in">
+    <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-5 pb-28 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -96,7 +95,7 @@ export function FilesView({ activeTask, onOpenThemeModal }) {
               className="font-display text-xl font-extrabold tracking-tight truncate"
               style={{ color: 'var(--canvas-text)' }}
             >
-              Media Library
+              Library
             </h1>
             <span
               className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex-shrink-0"
@@ -152,19 +151,6 @@ export function FilesView({ activeTask, onOpenThemeModal }) {
               <LayoutGrid size={15} />
             </button>
           </div>
-
-          {onOpenThemeModal && (
-            <button
-              type="button"
-              onClick={onOpenThemeModal}
-              className="p-2 surface-card spring-press"
-              style={{ borderRadius: 'var(--radius-button)', color: 'var(--accent-text)' }}
-              aria-label="Open theme switcher"
-              title="Appearance"
-            >
-              <Palette size={15} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -212,7 +198,7 @@ export function FilesView({ activeTask, onOpenThemeModal }) {
       )}
 
       {errorMessage && (
-        <div className="flex items-center gap-2 p-3 surface-card border-rose-400/70 text-rose-500 text-xs">
+        <div className="flex items-center gap-2 p-3 surface-error text-xs font-semibold">
           <AlertCircle size={14} />
           <span>{errorMessage}</span>
         </div>

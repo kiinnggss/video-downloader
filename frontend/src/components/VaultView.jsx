@@ -17,7 +17,6 @@ import {
   FileAudio,
   Radio,
   Copy,
-  Palette,
   Delete,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
@@ -31,7 +30,7 @@ import {
 const PIN_LEN_STORAGE_KEY = 'crystal_vault_pin_len';
 const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', 'Back'];
 
-export function VaultView({ onOpenThemeModal }) {
+export function VaultView() {
   const [pin, setPin] = useState('');
   const [token, setToken] = useState(null);
   const [vaultFiles, setVaultFiles] = useState([]);
@@ -403,7 +402,7 @@ export function VaultView({ onOpenThemeModal }) {
   const dotCount = Math.max(4, Math.min(6, pin.length || 4));
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-md mx-auto px-4 pt-5 pb-28 min-h-[80vh] animate-fade-in">
+    <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-5 pb-28 min-h-[80vh] animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -412,7 +411,7 @@ export function VaultView({ onOpenThemeModal }) {
               className="font-display text-xl font-extrabold tracking-tight truncate"
               style={{ color: 'var(--canvas-text)' }}
             >
-              Private Vault
+              Vault
             </h1>
             <span
               className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex-shrink-0"
@@ -431,18 +430,6 @@ export function VaultView({ onOpenThemeModal }) {
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {onOpenThemeModal && (
-            <button
-              type="button"
-              onClick={onOpenThemeModal}
-              className="p-2.5 surface-card spring-press"
-              style={{ borderRadius: 'var(--radius-button)', color: 'var(--accent-text)' }}
-              aria-label="Open theme switcher"
-              title="Appearance"
-            >
-              <Palette size={15} />
-            </button>
-          )}
           {token && (
             <>
               <button
@@ -476,7 +463,7 @@ export function VaultView({ onOpenThemeModal }) {
 
       {/* Notifications */}
       {errorMsg && (
-        <div className="flex items-center gap-2 p-3.5 surface-card border-rose-400/70 text-rose-500 text-xs font-semibold">
+        <div className="flex items-center gap-2 p-3.5 surface-error text-xs font-semibold">
           <AlertCircle size={15} className="flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
@@ -851,7 +838,7 @@ export function VaultView({ onOpenThemeModal }) {
       {/* MULTI-SELECT FLOATING ACTION BAR */}
       {token && isSelectMode && selectedIds.length > 0 && (
         <div className="fixed bottom-24 left-4 right-4 z-40 flex justify-center">
-          <div className="w-full max-w-md surface-card-active p-3 flex items-center justify-between gap-2">
+          <div className="w-full max-w-2xl surface-card-active p-3 flex items-center justify-between gap-2">
             <span className="text-xs font-mono font-bold px-2" style={{ color: 'var(--accent-vault-text)' }}>
               {selectedIds.length} SELECTED
             </span>

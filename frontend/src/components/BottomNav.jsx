@@ -4,7 +4,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { hexToRgba, getContrastTextColor } from '../theme/themes';
 
 const TAB_DEFS = [
-  { id: 'home', label: 'Inspect', icon: Compass, role: 'primary' },
+  { id: 'home', label: 'Home', icon: Compass, role: 'primary' },
   { id: 'downloads', label: 'Transfers', icon: ArrowDownCircle, role: 'secondary' },
   { id: 'files', label: 'Library', icon: Folder, role: 'primary' },
   { id: 'vault', label: 'Vault', icon: Shield, role: 'vault' },
@@ -50,7 +50,7 @@ export function BottomNav({ currentTab, onChangeTab, activeDownloadCount = 0 }) 
       aria-label="Primary navigation"
       className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-5 px-4 pointer-events-none select-none"
     >
-      <div className="relative w-full max-w-sm pointer-events-auto">
+      <div className="relative w-full max-w-md pointer-events-auto">
         {/* Self-contained Floating Pill Navigation Dock */}
         <div
           className="relative grid grid-cols-4 items-center h-[68px] p-1.5 surface-dock transition-all duration-300"

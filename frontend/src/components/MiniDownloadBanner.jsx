@@ -41,7 +41,7 @@ export function MiniDownloadBanner({ task, onOpenDownloads }) {
     <div className="fixed bottom-24 left-4 right-4 z-30 flex justify-center pointer-events-none">
       <div
         onClick={onOpenDownloads}
-        className="w-full max-w-sm surface-card-active rounded-2xl p-2.5 px-3.5 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in spring-press"
+        className="w-full max-w-md surface-card-active rounded-2xl p-2.5 px-3.5 flex items-center justify-between gap-3 pointer-events-auto cursor-pointer animate-fade-in spring-press"
         title="Tap to inspect active download"
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
