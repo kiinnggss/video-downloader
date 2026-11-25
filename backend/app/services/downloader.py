@@ -265,7 +265,7 @@ def run_download_thread(task_id: str, req: DownloadRequest, db_path: str = None)
         },
         "extractor_args": {
             "youtube": {
-                "player_client": ["ios", "android", "mweb", "web"]
+                "player_client": ["default", "android_vr", "tv_simply"]
             },
             "tiktok": {
                 "api": ["app", "web"]
@@ -450,7 +450,7 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
         "no_warnings": True,
         "format": "all",
         "extractor_args": {
-            "youtube": {"player_client": ["ios", "android", "mweb", "web"]},
+            "youtube": {"player_client": ["default", "android_vr", "tv_simply"]},
             "tiktok": {"api": ["app", "web"]},
         },
         "js_runtimes": {"node": {}},
@@ -534,7 +534,7 @@ async def pipe_media_stream(url: str, format_id: str = "best", is_audio: bool = 
             "retries": 10,
             "fragment_retries": 10,
             "extractor_args": {
-                "youtube": {"player_client": ["ios", "android", "mweb", "web"]},
+                "youtube": {"player_client": ["default", "android_vr", "tv_simply"]},
                 "tiktok": {"api": ["app", "web"]},
             },
             "js_runtimes": {"node": {}},

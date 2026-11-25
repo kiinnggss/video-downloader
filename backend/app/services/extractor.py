@@ -181,7 +181,7 @@ def extract_video_info(url: str, device_id: Optional[str] = None) -> InspectResp
         },
         "extractor_args": {
             "youtube": {
-                "player_client": ["ios", "android", "mweb", "web"]
+                "player_client": ["default", "android_vr", "tv_simply"]
             },
             "tiktok": {
                 "api": ["app", "web"]

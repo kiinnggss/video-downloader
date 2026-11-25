@@ -301,6 +301,11 @@ def test_extract_video_info_proxy_env(monkeypatch):
         extract_video_info("https://example.com/watch?v=proxy")
         call_opts_no_proxy = mock_ydl_cls.call_args[0][0]
         assert "proxy" not in call_opts_no_proxy
+        assert call_opts_no_proxy["extractor_args"]["youtube"]["player_client"] == [
+            "default",
+            "android_vr",
+            "tv_simply",
+        ]
 
     monkeypatch.setenv("YTDLP_PROXY", "socks5h://user:pass@127.0.0.1:9050")
     with patch("yt_dlp.YoutubeDL") as mock_ydl_cls:
